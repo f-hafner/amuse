@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from amusetest import TestWithMPI
 import numpy
-
-from amuse.community.bhtree.interface import BHTreeInterface
-
 from pytest import approx
 from pytest import fixture
+from amuse.community.bhtree.interface import BHTreeInterface
+
+# TODO next
+# - create fixture for interface with multiple particles?
+# - fixture/helper fct for creating particles? -> what is the index test doing exactly?
 
 
 @fixture
@@ -16,13 +17,13 @@ def interface():
     return interface
 
 
-def test_BHTreeInterface():
+def test_literature_references():
     instance = BHTreeInterface()
     assert "Barnes" in instance.all_literature_references_string()
     instance.stop()
 
 
-def test_BHTreeInterface_2(interface):
+def test_create_and_retrieve_particles(interface):
     res1 = interface.new_particle(mass=11.0, radius=2.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
     res2 = interface.new_particle(mass=21.0, radius=5.0, x=10.0, y=0.0, z=0.0, vx=10.0, vy=0.0, vz=0.0)
 
@@ -45,7 +46,7 @@ def test_BHTreeInterface_2(interface):
     interface.stop()
 
 
-def test_BHTreeInterface_3(interface):
+def test_delete_particle_and_index_management(interface):
     for i in [1, 2, 3]:
         temp_particle = interface.new_particle(mass=i, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
         assert temp_particle["index_of_the_particle"] == i
@@ -67,7 +68,7 @@ def test_BHTreeInterface_3(interface):
     interface.stop()
 
 
-def test_BHTreeInterface_4(interface):
+def test_create_multiple_particles_at_once(interface):
     interface.new_particle([10, 20], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 1])
     interface.commit_particles()
     retrieved_state = interface.get_state(1)
@@ -81,7 +82,24 @@ def test_BHTreeInterface_4(interface):
     interface.cleanup_code()
     interface.stop()
 
-def test_BHTreeInterface_5(interface):
+
+# tests 5 and 7 were duplicates(?)
+#def test_get_state_for_multiple_particles(interface):
+#    interface.new_particle([10, 20], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 1])
+#    interface.commit_particles()
+#    retrieved_state = interface.get_state(1)
+#
+#    assert retrieved_state["mass"] == 10.0
+#    assert retrieved_state["radius"] == 1
+#
+#    retrieved_state = interface.get_state([1, 2])
+#    assert retrieved_state["mass"][1] == 20.0
+#    assert interface.get_number_of_particles()["number_of_particles"] == 2
+#    interface.cleanup_code()
+#    interface.stop()
+
+
+def test_particle_id_after_delete_and_new(interface):
     ids = []
     for i in [1, 2, 3]:
         id, error = interface.new_particle(mass=i, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
@@ -97,22 +115,7 @@ def test_BHTreeInterface_5(interface):
     interface.stop()
 
 
-def test_BHTreeInterface_6(interface):
-    interface.new_particle([10, 20], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 1])
-    interface.commit_particles()
-    retrieved_state = interface.get_state(1)
-
-    assert retrieved_state["mass"] == 10.0
-    assert retrieved_state["radius"] == 1
-
-    retrieved_state = interface.get_state([1, 2])
-    assert retrieved_state["mass"][1] == 20.0
-    assert interface.get_number_of_particles()["number_of_particles"] == 2
-    interface.cleanup_code()
-    interface.stop()
-
-
-def test_BHTreeInterface_8(interface):
+def test_calculate_gravitational_potential(interface):
     interface.set_epsilon_squared(0.1 * 0.1)
     interface.commit_parameters()
     id1, errorcode = interface.new_particle(mass=10.0, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
