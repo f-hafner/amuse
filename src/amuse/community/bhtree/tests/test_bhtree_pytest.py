@@ -23,170 +23,149 @@ except ImportError:
     HAS_MATPLOTLIB = False
 
 
+from pytest import fixture
+from pytest import approx
+
+
+from amuse.units.quantities import none
+from amuse.units.quantities import to_quantity
+from amuse.units.quantities import is_quantity
+
+
+def check_comparable(x, y):
+    if is_quantity(x):
+        if not is_quantity(y) and not x.unit.base == none.base:
+            raise TypeError("Cannot compare quantity: {0} with non-quantity: {1}.".format(x, y))
+    elif is_quantity(y):
+        if not y.unit.base == none.base:
+            raise TypeError("Cannot compare non-quantity: {0} with quantity: {1}.".format(x, y))
+
+
+def convert_to_numeric(x, y, in_units):
+    if in_units:
+        return (x.value_in(in_units), y.value_in(in_units))
+    elif is_quantity(x) or is_quantity(y):
+        return (
+                to_quantity(x).value_in(to_quantity(y).unit),
+                to_quantity(y).value_in(to_quantity(y).unit)
+                )
+    else:
+        return (x, y)
+
+
+# helper function to check almost equal
+# NOTE: this is currently written for a scalar; the original
+# functions work with np.arrays
+# Also, we'll have to add functionality for the units here
+# TODO: add regression tests for new checks and old checks?
+def check_equal_with_abstol(x, y, digits, msg=""):
+    """Ported from failUnlessAlmostEqual."""
+    check_comparable(x, y)
+    assert x == approx(y, abs=10**(-digits)), msg
+
+
+def check_equal_units(x, y, msg="", in_units=None):
+    """Ported from failUnlessEqual."""
+    check_comparable(x, y)
+    x_num, y_num = convert_to_numeric(x, y, in_units)
+    assert x_num == y_num, msg
+
+
+
+@fixture
+def bhtree_setup():
+    #convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
+    convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m) # for test4
+    # TODO: I should somehow compose the fixture to take one of the above and do all the operations
+    # or alternatively: create separate fixtures for both tests? since they
+    # also differ in the entire setup? -> need to think more carefully about a good design
+    # that also other people understand.
+
+
+    instance = BHTree(convert_nbody)
+    instance.parameters.epsilon_squared = 0.001 | units.AU**2
+    instance.commit_parameters()
+
+    stars = datamodel.Stars(2)
+
+    sun = stars[0]
+    sun.mass = units.MSun(1.0)
+    sun.position = [0.0, 0.0, 0.0] | units.m
+    sun.velocity = [0.0, 0.0, 0.0] | units.ms
+    sun.radius = units.RSun(1.0)
+
+    earth = stars[1]
+    earth.mass = units.kg(5.9736e24)
+    earth.radius = units.km(6371)
+    earth.position = [149.5e6, 0.0, 0.0] | units.km
+    earth.velocity = [0.0, 29800, 0.0] | units.ms
+
+    instance.particles.add_particles(stars)
+    #instance.commit_particles() # this disables adding particles later on
+    yield stars, instance
+
+    instance.cleanup_code()
+    instance.stop()
+
+
+
+def test_test1(bhtree_setup):
+    stars, bhtree = bhtree_setup
+    sun, earth = stars
+    postion_at_start = earth.position.value_in(units.AU)[0]
+
+    bhtree.evolve_model(365.0 | units.day)
+    bhtree.particles.copy_values_of_all_attributes_to(stars)
+
+    postion_after_full_rotation = earth.position.value_in(units.AU)[0]
+    check_equal_with_abstol(postion_at_start, postion_after_full_rotation, 3)
+
+
+    bhtree.evolve_model(365.0 + (365.0 / 2) | units.day)
+    bhtree.particles.copy_values_of_all_attributes_to(stars)
+    postion_after_half_a_rotation = earth.position.value_in(units.AU)[0]
+
+    check_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 2)
+
+    bhtree.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
+    bhtree.particles.copy_values_of_all_attributes_to(stars)
+    postion_after_half_a_rotation = earth.position.value_in(units.AU)[1]
+
+    check_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 1)
+
+
+def test_test4(bhtree_setup):
+    _, bhtree = bhtree_setup
+
+    index = bhtree.new_particle(
+        15.0 | units.kg,
+        10.0 | units.m, 20.0 | units.m, 30.0 | units.m,
+        0.0 | units.m/units.s, 0.0 | units.m/units.s, 0.0 | units.m/units.s,
+        10.0 | units.m
+    )
+    bhtree.commit_particles()
+    check_equal_units(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
+    check_equal_units(bhtree.get_radius(index), 10.0 | units.m)
+
+
+
+
+# NOTES
+# test2 seems mostly for the plotting? there's a test for the sun radius,
+# but this just tests that attributes of the same instance (sun) is the same?
+# test3 also does not test anything
+# fct new_system_of_sun_and_earth not used anywhere
+
 
 class TestBHTree(TestWithMPI):
-    def new_system_of_sun_and_earth(self):
-        stars = datamodel.Stars(2)
-        sun = stars[0]
-        sun.mass = units.MSun(1.0)
-        sun.position = units.m(numpy.array((0.0, 0.0, 0.0)))
-        sun.velocity = units.ms(numpy.array((0.0, 0.0, 0.0)))
-        sun.radius = units.RSun(1.0)
 
-        earth = stars[1]
-        earth.mass = units.kg(5.9736e24)
-        earth.radius = units.km(6371)
-        earth.position = units.km(numpy.array((149.5e6, 0.0, 0.0)))
-        earth.velocity = units.ms(numpy.array((0.0, 29800, 0.0)))
-
-        return stars
-
-    def test1(self):
-        convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km)
-
-        instance = BHTree(convert_nbody)
-        instance.parameters.epsilon_squared = 0.001 | units.AU**2
-
-        stars = datamodel.Stars(2)
-
-        sun = stars[0]
-        sun.mass = units.MSun(1.0)
-        sun.position = [0.0, 0.0, 0.0] | units.m
-        sun.velocity = [0.0, 0.0, 0.0] | units.ms
-        sun.radius = units.RSun(1.0)
-
-        earth = stars[1]
-        earth.mass = units.kg(5.9736e24)
-        earth.radius = units.km(6371)
-        earth.position = [149.5e6, 0.0, 0.0] | units.km
-        earth.velocity = [0.0, 29800, 0.0] | units.ms
-
-        # instance.particles.add_particles(stars)
-        instance.particles.add_particles(stars)
-
-        postion_at_start = earth.position.value_in(units.AU)[0]
-
-        instance.evolve_model(365.0 | units.day)
-        instance.particles.copy_values_of_all_attributes_to(stars)
-
-        postion_after_full_rotation = earth.position.value_in(units.AU)[0]
-
-        self.assertAlmostEqual(postion_at_start, postion_after_full_rotation, 3)
-
-        instance.evolve_model(365.0 + (365.0 / 2) | units.day)
-
-        instance.particles.copy_values_of_all_attributes_to(stars)
-
-        postion_after_half_a_rotation = earth.position.value_in(units.AU)[0]
-        self.assertAlmostEqual(-postion_at_start, postion_after_half_a_rotation, 2)
-
-        instance.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
-
-        instance.particles.copy_values_of_all_attributes_to(stars)
-
-        postion_after_half_a_rotation = earth.position.value_in(units.AU)[1]
-
-        self.assertAlmostEqual(-postion_at_start, postion_after_half_a_rotation, 1)
-        instance.cleanup_code()
-        instance.stop()
-
-    def test2(self):
-        # not completed
-        convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km)
-
-        instance = BHTree(convert_nbody)
-        # instance.dt_dia = 1
-        instance.parameters.epsilon_squared = 0.001 | units.AU**2
-        # instance.timestep = 0.0001
-        # instance.use_self_gravity = 0
-        instance.commit_parameters()
-
-        stars = datamodel.Stars(2)
-        sun = stars[0]
-        sun.mass = units.MSun(1.0)
-        sun.position = units.m(numpy.array((0.0, 0.0, 0.0)))
-        sun.velocity = units.ms(numpy.array((0.0, 0.0, 0.0)))
-        sun.radius = units.RSun(1.0)
-
-        earth = stars[1]
-        earth.mass = units.kg(5.9736e24)
-        earth.radius = units.km(6371)
-        earth.position = units.km(numpy.array((149.5e6, 0.0, 0.0)))
-        earth.velocity = units.ms(numpy.array((0.0, 29800, 0.0)))
-
-        instance.particles.add_particles(stars)
-        instance.commit_particles()
-        self.assertAlmostRelativeEquals(sun.radius, instance.particles[0].radius)
-
-        for x in range(1, 2000, 10):
-            instance.evolve_model(x | units.day)
-            instance.particles.copy_values_of_all_attributes_to(stars)
-            stars.savepoint()
-
-        if HAS_MATPLOTLIB:
-            figure = pyplot.figure()
-            plot = figure.add_subplot(1, 1, 1)
-
-            x_points = earth.get_timeline_of_attribute("x")
-            y_points = earth.get_timeline_of_attribute("y")
-
-            x_points_in_AU = [t_x[1].value_in(units.AU) for t_x in x_points]
-            y_points_in_AU = [t_x1[1].value_in(units.AU) for t_x1 in y_points]
-
-            plot.scatter(x_points_in_AU, y_points_in_AU, color="b", marker='o')
-
-            plot.set_xlim(-1.5, 1.5)
-            plot.set_ylim(-1.5, 1.5)
-
-            test_results_path = self.get_path_to_results()
-            output_file = os.path.join(test_results_path, "bhtree-earth-sun.svg")
-            figure.savefig(output_file)
-
-        instance.cleanup_code()
-        instance.stop()
-
-    def test3(self):
-        convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km)
-
-        instance = BHTree(convert_nbody)
-        # instance.dt_dia = 1
-        instance.parameters.epsilon_squared = 0.001 | units.AU**2
-        # instance.timestep = 0.0001
-        # instance.use_self_gravity = 0
-        instance.commit_parameters()
-
-        stars = datamodel.Stars(2)
-        star1 = stars[0]
-        star2 = stars[1]
-
-        star1.mass = units.MSun(1.0)
-        star1.position = units.AU(numpy.array((-.10, 0.0, 0.0)))
-        star1.velocity = units.AUd(numpy.array((0.0, 0.0, 0.0)))
-        star1.radius = units.RSun(1.0)
-
-        star2.mass = units.MSun(1.0)
-        star2.position = units.AU(numpy.array((.10, 0.0, 0.0)))
-        star2.velocity = units.AUd(numpy.array((0.0, 0.0, 0.0)))
-        star2.radius = units.RSun(100.0)
-
-        instance.particles.add_particles(stars)
-        instance.commit_particles()
-
-        for x in range(1, 200, 1):
-            instance.evolve_model(x | units.day)
-            instance.particles.copy_values_of_all_attributes_to(stars)
-            # instance.get_indices_of_colliding_particles()
-            # print stars[0].position-stars[1].position
-            stars.savepoint()
-
-        instance.cleanup_code()
-        instance.stop()
 
     def test4(self):
         convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
 
         instance = BHTree(convert_nbody)
         instance.commit_parameters()
+        breakpoint()
 
         index = instance.new_particle(
             15.0 | units.kg,
