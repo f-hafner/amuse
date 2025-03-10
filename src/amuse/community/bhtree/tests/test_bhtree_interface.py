@@ -4,7 +4,7 @@ from pytest import approx
 from pytest import fixture
 from amuse.community.bhtree.interface import BHTreeInterface
 
-# TODO next
+# TODO?
 # - create fixture for interface with multiple particles?
 # - fixture/helper fct for creating particles? -> what is the index test doing exactly?
 
@@ -14,7 +14,9 @@ def interface():
     interface = BHTreeInterface()
     interface.initialize_code()
     interface.commit_parameters()
-    return interface
+    yield interface
+    interface.cleanup_code()
+    interface.stop()
 
 
 def test_literature_references():
@@ -42,9 +44,6 @@ def test_create_and_retrieve_particles(interface):
     assert interface.get_index_of_first_particle()["index_of_the_particle"] == 1
     assert interface.get_index_of_next_particle(1)["index_of_the_next_particle"] == 2
 
-    interface.cleanup_code()
-    interface.stop()
-
 
 def test_delete_particle_and_index_management(interface):
     for i in [1, 2, 3]:
@@ -64,8 +63,6 @@ def test_delete_particle_and_index_management(interface):
     assert interface.get_index_of_first_particle()["index_of_the_particle"] == 3
     assert interface.get_index_of_next_particle(2)["__result"] == 1
 
-    interface.cleanup_code()
-    interface.stop()
 
 
 def test_create_multiple_particles_at_once(interface):
@@ -78,12 +75,12 @@ def test_create_multiple_particles_at_once(interface):
 
     retrieved_state = interface.get_state([1, 2])
     assert retrieved_state["mass"][1] == 20.0
+    # TODO: we could test for return type (ordered dict), for keys of the returned object
+    # Also, we could test for the entire data in mass (the entire list, not a single element)
     assert interface.get_number_of_particles()["number_of_particles"] == 2
-    interface.cleanup_code()
-    interface.stop()
 
 
-# tests 5 and 7 were duplicates(?)
+# tests 5 and 7 in the original file were duplicates(?)
 #def test_get_state_for_multiple_particles(interface):
 #    interface.new_particle([10, 20], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 1])
 #    interface.commit_particles()
@@ -102,17 +99,14 @@ def test_create_multiple_particles_at_once(interface):
 def test_particle_id_after_delete_and_new(interface):
     ids = []
     for i in [1, 2, 3]:
-        id, error = interface.new_particle(mass=i, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
+        id, _ = interface.new_particle(mass=i, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
         ids.append(id)
 
     interface.commit_particles()
 
     interface.delete_particle(ids[0])
-    id, error = interface.new_particle(mass=4, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
+    id, _ = interface.new_particle(mass=4, radius=1.0, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
     assert id != ids[-1]
-
-    interface.cleanup_code()
-    interface.stop()
 
 
 def test_calculate_gravitational_potential(interface):
@@ -127,6 +121,4 @@ def test_calculate_gravitational_potential(interface):
 
     # NOTE: -8 is taken from old code; it is semi-automated there
     assert potential == approx(-10.0 / numpy.sqrt(2.0**2 + 0.1**2), rel=1e-8)
-    interface.cleanup_code()
-    interface.stop()
 
