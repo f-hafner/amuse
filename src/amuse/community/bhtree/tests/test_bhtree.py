@@ -706,7 +706,7 @@ def test_test22(bhtree_test18):
 
     radii = [x.radius for x in instance.particles]
     expected = [x | nbody_system.length for x in [0.005, 0.005, 4.0]]
-    assert all([x == y for x,y in zip(radii, expected)]), \
+    assert all(x == y for x,y in zip(radii, expected)), \
             "cannot add new particle with different radius"
 
 
