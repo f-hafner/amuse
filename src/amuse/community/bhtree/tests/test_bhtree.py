@@ -21,11 +21,40 @@ from amusetest_helpers import assert_equal_units
 from amusetest_helpers import assert_equal_with_abstol
 from amusetest_helpers import assert_equal_with_reltol
 
+@fixture
+def bhtree_empty():
+    instance = BHTree()
+    yield instance
+
+    instance.cleanup_code()
+    instance.stop()
+
+
+# Factory to create bhtrees. Handles teardown for all
+# Follows https://docs.pytest.org/en/stable/how-to/fixtures.html#factories-as-fixtures
+@fixture()
+def make_bhtree():
+    created_bhtrees = []
+
+    def _make_bhtree(x=None):
+        if not x: # TODO: supersedes bhtree_empty (?)
+            bhtree = BHTree()
+        else:
+            bhtree = BHTree(x)
+        created_bhtrees.append(bhtree)
+        return bhtree
+
+    yield _make_bhtree
+
+    for tree in created_bhtrees:
+        tree.cleanup_code()
+        tree.stop()
+
 
 @fixture
-def bhtree_msun():
+def bhtree_msun(make_bhtree):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
-    instance = BHTree(convert_nbody)
+    instance = make_bhtree(convert_nbody)
     instance.parameters.epsilon_squared = 0.001 | units.AU**2
     instance.commit_parameters()
 
@@ -47,32 +76,17 @@ def bhtree_msun():
     #instance.commit_particles() # this disables adding particles later on
     yield stars, instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 @fixture
-def bhtree_kg(): # for test4, test6, test7, test11, test12, test13
+def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
-    instance = BHTree(convert_nbody)
+    instance = make_bhtree(convert_nbody)
     instance.commit_parameters()
     yield instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 
 @fixture
-def bhtree_empty():
-    instance = BHTree()
-    yield instance
-
-    instance.cleanup_code()
-    instance.stop()
-
-
-@fixture
-def bhtree_test9():
-    instance = BHTree()
+def bhtree_test9(make_bhtree):
+    instance = make_bhtree()
     instance.initialize_code()
     instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
 
@@ -85,12 +99,9 @@ def bhtree_test9():
 
     yield instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 @fixture
-def bhtree_test10():
-    instance = BHTree()
+def bhtree_test10(make_bhtree):
+    instance = make_bhtree()
     instance.initialize_code()
     instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
     instance.commit_parameters()
@@ -105,23 +116,17 @@ def bhtree_test10():
 
     yield instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 
 @fixture
-def bhtree_test14():
+def bhtree_test14(make_bhtree):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.yr, 1.0 | units.AU)
-    instance = BHTree(convert_nbody)
+    instance = make_bhtree(convert_nbody)
     instance.commit_parameters()
     yield instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 
 @fixture
-def bhtree_for_epsilon_squared_test():
+def bhtree_for_epsilon_squared_test(make_bhtree):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
 
     particles = datamodel.Particles(2)
@@ -140,7 +145,7 @@ def bhtree_for_epsilon_squared_test():
     initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
     final_direction = []
     for log_eps2 in range(-9, 10, 2):
-        instance = BHTree(convert_nbody)
+        instance = make_bhtree(convert_nbody)
         instance.initialize_code()
         instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
         instance.particles.add_particles(particles)
@@ -148,22 +153,19 @@ def bhtree_for_epsilon_squared_test():
         instance.evolve_model(0.25 | units.yr)
         final_direction.append(math.atan((instance.particles[1].velocity[0] /
             instance.particles[1].velocity[1])))
-        #instance.stop()
 
     yield instance, initial_direction, final_direction
 
-    instance.cleanup_code()
-    instance.stop()
 
 @fixture
-def bhtree_to_test_energy():
+def bhtree_to_test_energy(make_bhtree):
     numpy.random.seed(0)
     number_of_stars = 2
     stars = plummer.new_plummer_model(number_of_stars)
     stars.radius = 0.00001 | nbody_system.length
     stars.scale_to_standard()
 
-    instance = BHTree()
+    instance = make_bhtree()
     instance.initialize_code()
     instance.parameters.epsilon_squared = (1.0 / 20.0 / (number_of_stars**0.33333) | nbody_system.length)**2
     instance.parameters.timestep = 0.004 | nbody_system.time
@@ -174,11 +176,8 @@ def bhtree_to_test_energy():
 
     yield instance
 
-    instance.cleanup_code()
-    instance.stop()
-
 @fixture
-def bhtree_test18(): # used in test 18, 19, 20, 21, 22
+def bhtree_test18(make_bhtree): # used in test 18, 19, 20, 21, 22
     particles = datamodel.Particles(2)
     particles.x = [0.0, 10.0] | nbody_system.length
     particles.y = 0 | nbody_system.length
@@ -189,7 +188,7 @@ def bhtree_test18(): # used in test 18, 19, 20, 21, 22
     particles.vz = 0 | nbody_system.speed
     particles.mass = 1.0 | nbody_system.mass
 
-    instance = BHTree()
+    instance = make_bhtree()
     instance.initialize_code()
 
     # NOTE: the below was used in tests 18, 19, 20. but tests still pass with this turned off.
@@ -198,9 +197,6 @@ def bhtree_test18(): # used in test 18, 19, 20, 21, 22
     instance.particles.add_particles(particles)
 
     yield instance
-
-    instance.cleanup_code()
-    instance.stop()
 
 
 @fixture
@@ -215,7 +211,7 @@ def bhtree_test23():
     particles.vz = 0.0 | nbody_system.speed
     particles.mass = 0.1 | nbody_system.mass # this is different
 
-    instance = BHTree(redirection="none")
+    instance = BHTree(redirection="none") # TODO: use kwargs here inside the fixture
     instance.particles.add_particles(particles)
     instance.commit_particles()
 
@@ -236,7 +232,7 @@ def bhtree_for_collision_detection():
     particles.z = 0 | nbody_system.length
     particles.velocity = [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
 
-    instance = BHTree(redirection='none')
+    instance = BHTree(redirection='none') # TODO: kwargs
     instance.initialize_code()
     instance.parameters.set_defaults()
 
