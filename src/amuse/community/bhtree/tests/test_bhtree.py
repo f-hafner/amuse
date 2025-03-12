@@ -21,13 +21,6 @@ from amusetest_helpers import assert_equal_units
 from amusetest_helpers import assert_equal_with_abstol
 from amusetest_helpers import assert_equal_with_reltol
 
-@fixture
-def bhtree_empty():
-    instance = BHTree()
-    yield instance
-
-    instance.cleanup_code()
-    instance.stop()
 
 
 # Factory to create bhtrees. Handles teardown for all
@@ -36,13 +29,13 @@ def bhtree_empty():
 def make_bhtree():
     created_bhtrees = []
 
-    def _make_bhtree(x=None):
-        if not x: # TODO: supersedes bhtree_empty (?)
-            bhtree = BHTree()
+    def _make_bhtree(x=None, **kwargs):
+        if not x:
+            tree = BHTree(**kwargs)
         else:
-            bhtree = BHTree(x)
-        created_bhtrees.append(bhtree)
-        return bhtree
+            tree = BHTree(x, **kwargs)
+        created_bhtrees.append(tree)
+        return tree
 
     yield _make_bhtree
 
@@ -200,7 +193,7 @@ def bhtree_test18(make_bhtree): # used in test 18, 19, 20, 21, 22
 
 
 @fixture
-def bhtree_test23():
+def bhtree_test23(make_bhtree):
 
     particles = datamodel.Particles(2)
     particles.x = [0.0, 10.0] | nbody_system.length
@@ -211,19 +204,16 @@ def bhtree_test23():
     particles.vz = 0.0 | nbody_system.speed
     particles.mass = 0.1 | nbody_system.mass # this is different
 
-    instance = BHTree(redirection="none") # TODO: use kwargs here inside the fixture
+    instance = make_bhtree(redirection="none")
     instance.particles.add_particles(particles)
     instance.commit_particles()
 
 
     yield instance, particles
 
-    instance.cleanup_code()
-    instance.stop()
-
 
 @fixture
-def bhtree_for_collision_detection():
+def bhtree_for_collision_detection(make_bhtree):
     particles = datamodel.Particles(7)
     particles.mass = 0.001 | nbody_system.mass
     particles.radius = 0.01 | nbody_system.length
@@ -232,7 +222,7 @@ def bhtree_for_collision_detection():
     particles.z = 0 | nbody_system.length
     particles.velocity = [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
 
-    instance = BHTree(redirection='none') # TODO: kwargs
+    instance = make_bhtree(redirection='none')
     instance.initialize_code()
     instance.parameters.set_defaults()
 
@@ -248,9 +238,6 @@ def bhtree_for_collision_detection():
     instance.evolve_model(1.0 | nbody_system.time)
 
     yield instance, particles, collisions
-
-    instance.cleanup_code()
-    instance.stop()
 
 
 def test_test1(bhtree_msun):
@@ -291,8 +278,8 @@ def test_test4(bhtree_kg):
     assert_equal_units(bhtree.get_radius(index), 10.0 | units.m)
 
 
-def test_test5(bhtree_empty):
-    instance = bhtree_empty
+def test_test5(make_bhtree):
+    instance = make_bhtree()
     instance.commit_parameters() # TODO: can we move this away?
 
     index = instance.new_particle(
