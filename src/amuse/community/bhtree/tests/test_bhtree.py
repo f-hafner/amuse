@@ -12,62 +12,14 @@ from amuse.units import constants
 from amuse.units import nbody_system
 from amuse.units import units
 from amuse.units import quantities
-from amuse.units.quantities import none
-from amuse.units.quantities import to_quantity
-from amuse.units.quantities import is_quantity
+
 from amuse import datamodel
 from amuse.ic import plummer
 from pytest import fixture
-from pytest import approx
 
-
-
-def check_comparable(x, y):
-    if is_quantity(x):
-        if not is_quantity(y) and not x.unit.base == none.base:
-            raise TypeError("Cannot compare quantity: {0} with non-quantity: {1}.".format(x, y))
-    elif is_quantity(y):
-        if not y.unit.base == none.base:
-            raise TypeError("Cannot compare non-quantity: {0} with quantity: {1}.".format(x, y))
-
-
-def convert_to_numeric(x, y, in_units):
-    if in_units:
-        return (x.value_in(in_units), y.value_in(in_units))
-    elif is_quantity(x) or is_quantity(y):
-        return (
-                to_quantity(x).value_in(to_quantity(y).unit),
-                to_quantity(y).value_in(to_quantity(y).unit)
-                )
-    else:
-        return (x, y)
-
-
-# helper function to check almost equal
-# NOTE: this is currently written for a scalar; the original
-# functions work with np.arrays
-# Also, we'll have to add functionality for the units here
-# TODO: add regression tests for new checks and old checks?
-def check_equal_with_abstol(x, y, digits, msg=""):
-    """Ported from failUnlessAlmostEqual."""
-    check_comparable(x, y)
-    x_num, y_num = convert_to_numeric(x, y, in_units=None)
-    assert x_num == approx(y_num, abs=10**(-digits)), msg
-
-
-def check_equal_with_reltol(x, y, digits=8, msg="", in_units=None):
-    """Ported from failUnlessAlmostRelativeEqual."""
-    check_comparable(x, y)
-    x_num, y_num = convert_to_numeric(x, y, in_units=in_units)
-    assert x_num == approx(y_num, rel=10**(-digits)), msg
-
-
-# TODO: rename the above with units? or find better name in general
-def check_equal_units(x, y, msg="", in_units=None):
-    """Ported from failUnlessEqual."""
-    check_comparable(x, y)
-    x_num, y_num = convert_to_numeric(x, y, in_units)
-    assert x_num == y_num, msg
+from amusetest_helpers import assert_equal_units
+from amusetest_helpers import assert_equal_with_abstol
+from amusetest_helpers import assert_equal_with_reltol
 
 
 @fixture
@@ -314,19 +266,19 @@ def test_test1(bhtree_msun):
     bhtree.particles.copy_values_of_all_attributes_to(stars)
 
     postion_after_full_rotation = earth.position.value_in(units.AU)[0]
-    check_equal_with_abstol(postion_at_start, postion_after_full_rotation, 3)
+    assert_equal_with_abstol(postion_at_start, postion_after_full_rotation, 3)
 
     bhtree.evolve_model(365.0 + (365.0 / 2) | units.day)
     bhtree.particles.copy_values_of_all_attributes_to(stars)
     postion_after_half_a_rotation = earth.position.value_in(units.AU)[0]
 
-    check_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 2)
+    assert_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 2)
 
     bhtree.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
     bhtree.particles.copy_values_of_all_attributes_to(stars)
     postion_after_half_a_rotation = earth.position.value_in(units.AU)[1]
 
-    check_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 1)
+    assert_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 1)
 
 
 def test_test4(bhtree_kg):
@@ -339,8 +291,8 @@ def test_test4(bhtree_kg):
         10.0 | units.m
     )
     bhtree.commit_particles()
-    check_equal_units(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
-    check_equal_units(bhtree.get_radius(index), 10.0 | units.m)
+    assert_equal_units(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
+    assert_equal_units(bhtree.get_radius(index), 10.0 | units.m)
 
 
 def test_test5(bhtree_empty):
@@ -354,8 +306,8 @@ def test_test5(bhtree_empty):
         10.0 | nbody_system.length
     )
     instance.commit_particles()
-    check_equal_units(instance.get_radius(index), 10.0 | nbody_system.length)
-    check_equal_units(instance.get_mass(index), 15.0 | nbody_system.mass)
+    assert_equal_units(instance.get_radius(index), 10.0 | nbody_system.length)
+    assert_equal_units(instance.get_mass(index), 15.0 | nbody_system.mass)
 
 
 
@@ -370,7 +322,7 @@ def test_test6(bhtree_kg):
     )
     instance.commit_particles()
 
-    check_equal_units(instance.get_mass(indices[0]), 15.0 | units.kg)
+    assert_equal_units(instance.get_mass(indices[0]), 15.0 | units.kg)
 
     with pytest.raises(AmuseException) as excinfo:
         instance.get_mass([4, 5])
@@ -391,13 +343,13 @@ def test_test7(bhtree_kg):
     instance.particles.add_particles(particles)
     instance.commit_particles()
 
-    check_equal_units(instance.get_mass(1), 15.0 | units.kg)
+    assert_equal_units(instance.get_mass(1), 15.0 | units.kg)
 
-    check_equal_with_reltol(instance.get_position(1)[2], 30.0 | units.m)
+    assert_equal_with_reltol(instance.get_position(1)[2], 30.0 | units.m)
 
     assert len(instance.particles) == 2
-    check_equal_with_reltol(instance.particles.mass[1], 30.0 | units.kg)
-    check_equal_with_reltol(instance.particles.position[1][2], 60.0 | units.m)
+    assert_equal_with_reltol(instance.particles.mass[1], 30.0 | units.kg)
+    assert_equal_with_reltol(instance.particles.position[1][2], 60.0 | units.m)
 
 
 def test_test8(bhtree_kg):
@@ -416,7 +368,7 @@ def test_test8(bhtree_kg):
     instance.commit_particles()
 
     instance.particles.mass = [17.0, 33.0] | units.kg
-    check_equal_units(instance.get_mass(1), 17.0 | units.kg)
+    assert_equal_units(instance.get_mass(1), 17.0 | units.kg)
 
 
 def test_test9(bhtree_test9):
@@ -425,7 +377,7 @@ def test_test9(bhtree_test9):
     zero = 0.0 | nbody_system.length
     gravity = instance.get_gravity_at_point(zero, 1.0 | nbody_system.length, zero, zero)
     for f in gravity:
-        check_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
     for x in (0.25, 0.5, 0.75): # TODO: this we should put into a pytest parameterize
         x0 = x | nbody_system.length
@@ -435,15 +387,15 @@ def test_test9(bhtree_test9):
         fx0, fy0, fz0 = instance.get_gravity_at_point(zero, x0, zero, zero)
         fx1, fy1, fz1 = instance.get_gravity_at_point(zero, x1, zero, zero)
 
-        check_equal_with_reltol(fy0, 0.0 | nbody_system.acceleration, 3)
-        check_equal_with_reltol(fz0, 0.0 | nbody_system.acceleration, 3)
-        check_equal_with_reltol(fy1, 0.0 | nbody_system.acceleration, 3)
-        check_equal_with_reltol(fz1, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(fy0, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(fz0, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(fy1, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(fz1, 0.0 | nbody_system.acceleration, 3)
 
-        check_equal_with_reltol(fx0, -1.0 * fx1, 5)
+        assert_equal_with_reltol(fx0, -1.0 * fx1, 5)
         fx = (-1.0 / (x0**2) + 1.0 / (x1**2)) * (1.0 | nbody_system.length ** 3 / nbody_system.time ** 2)
-        check_equal_with_reltol(fx, fx0, 2)
-        check_equal_with_reltol(potential0, potential1, 5)
+        assert_equal_with_reltol(fx, fx0, 2)
+        assert_equal_with_reltol(potential0, potential1, 5)
 
 
 def test_test10(bhtree_test10):
@@ -452,7 +404,7 @@ def test_test10(bhtree_test10):
     zero = 0.0 | nbody_system.length
     gravity = instance.get_gravity_at_point(zero, zero, zero, zero)
     for f in gravity: # TODO: tested above as well
-        check_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
+        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
     for position in (0.25, 0.5, 0.75):
         p0 = position | nbody_system.length
@@ -467,10 +419,10 @@ def test_test10(bhtree_test10):
 
             for j in range(3):
                 if j != i:
-                    check_equal_with_reltol(f0[j], 0.0 | nbody_system.acceleration, 3)
-                    check_equal_with_reltol(f1[j], 0.0 | nbody_system.acceleration, 3)
+                    assert_equal_with_reltol(f0[j], 0.0 | nbody_system.acceleration, 3)
+                    assert_equal_with_reltol(f1[j], 0.0 | nbody_system.acceleration, 3)
                 else:
-                    check_equal_with_reltol(f0[j], -1.0 * f1[j], 5)
+                    assert_equal_with_reltol(f0[j], -1.0 * f1[j], 5)
 
 def test_test11(bhtree_kg):
     instance = bhtree_kg
@@ -486,12 +438,12 @@ def test_test11(bhtree_kg):
     instance.particles.add_particles(particles)
 
     copyof = instance.particles.copy()
-    check_equal_with_reltol(copyof[1].mass, 30 | units.kg, 6)
+    assert_equal_with_reltol(copyof[1].mass, 30 | units.kg, 6)
 
     copyof[1].mass = 35 | units.kg
     copyof.copy_values_of_all_attributes_to(instance.particles)
 
-    check_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
+    assert_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
 
 
 def test_test12(bhtree_kg):
@@ -516,7 +468,7 @@ def test_test12(bhtree_kg):
     curr_state = instance.get_state(1)
     for expected, actual in zip((16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
                              1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms, 0 | units.m), curr_state):
-        check_equal_with_reltol(actual, expected)
+        assert_equal_with_reltol(actual, expected)
 
     # TODO: is this just repeating the code from above
     instance.set_state(1, 16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
@@ -524,7 +476,7 @@ def test_test12(bhtree_kg):
     curr_state = instance.get_state(1)
     for expected, actual in zip((16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
                              1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms, 20 | units.m), curr_state):
-        check_equal_with_reltol(actual, expected)
+        assert_equal_with_reltol(actual, expected)
 
 
 def test_test13(bhtree_kg):
@@ -542,7 +494,7 @@ def test_test13(bhtree_kg):
 
     #copyof = instance.particles.copy() # not accessed?
     com = instance.center_of_mass_position
-    check_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m), constants.precision)
+    assert_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m), constants.precision)
 
 
 def test_bhtree_parameters(bhtree_test14):
@@ -553,22 +505,22 @@ def test_bhtree_parameters(bhtree_test14):
     assert isinstance(eps2, OrderedDictionary)
     assert eps2.keys() == ["epsilon_squared", "__result"]
     assert eps2.values() == [0.125, 0]
-    check_equal_with_reltol(instance.parameters.epsilon_squared, 0.125 | units.AU**2, in_units=units.AU**2)
+    assert_equal_with_reltol(instance.parameters.epsilon_squared, 0.125 | units.AU**2, in_units=units.AU**2)
 
     for x in [0.01, 0.1, 0.2]:
         instance.parameters.epsilon_squared = x | units.AU**2
-        check_equal_with_reltol(instance.parameters.epsilon_squared, x | units.AU**2, in_units=units.AU**2)
+        assert_equal_with_reltol(instance.parameters.epsilon_squared, x | units.AU**2, in_units=units.AU**2)
 
     time_step = instance.legacy_interface.get_time_step()
     assert isinstance(time_step, OrderedDictionary)
     assert time_step.keys() == ["time_step", "__result"]
     assert time_step.values() == [0.015625, 0]
 
-    check_equal_with_reltol(instance.parameters.timestep, 0.015625 | units.yr, in_units=units.yr)
+    assert_equal_with_reltol(instance.parameters.timestep, 0.015625 | units.yr, in_units=units.yr)
 
     for x in [0.001, 0.01, 0.1]:
         instance.parameters.timestep = x | units.yr
-        check_equal_with_reltol(instance.parameters.timestep, x | units.yr, in_units=units.yr)
+        assert_equal_with_reltol(instance.parameters.timestep, x | units.yr, in_units=units.yr)
 
     theta = instance.legacy_interface.get_theta_for_tree()
     assert isinstance(theta, OrderedDictionary)
@@ -605,19 +557,19 @@ def test_bhtree_parameters(bhtree_test14):
     assert dt_dia.keys() == ["dt_dia", "__result"]
     assert dt_dia.values() == [1.0, 0]
 
-    check_equal_with_reltol(instance.parameters.dt_dia, 1.0 | units.yr, in_units=units.yr)
+    assert_equal_with_reltol(instance.parameters.dt_dia, 1.0 | units.yr, in_units=units.yr)
     for x in [0.1, 10.0, 100.0]:
         instance.parameters.dt_dia = x | units.yr
-        check_equal_with_reltol(instance.parameters.dt_dia, x | units.yr, in_units=units.yr)
+        assert_equal_with_reltol(instance.parameters.dt_dia, x | units.yr, in_units=units.yr)
 
 def test_effect_of_bhtree_param_epsilon_squared(bhtree_for_epsilon_squared_test):
     instance, initial_direction, final_direction = bhtree_for_epsilon_squared_test
 
     # Small values of epsilon_squared should result in normal earth-sun dynamics: rotation of 90 degrees
-    check_equal_with_abstol(abs(final_direction[0]), abs(initial_direction + math.pi/2.0), 2)
+    assert_equal_with_abstol(abs(final_direction[0]), abs(initial_direction + math.pi/2.0), 2)
 
     # Large values of epsilon_squared should result in ~ no interaction
-    check_equal_with_abstol(final_direction[-1], initial_direction, 2)
+    assert_equal_with_abstol(final_direction[-1], initial_direction, 2)
 
     # Outcome is most sensitive to epsilon_squared when epsilon_squared = d(earth, sun)^2
     delta = [abs(final_direction[i+1]-final_direction[i]) for i in range(len(final_direction)-1)]
@@ -631,7 +583,7 @@ def test_total_energy(bhtree_to_test_energy): # formerly test16
     request.result()
     energy_total_t1 = instance.potential_energy + instance.kinetic_energy
 
-    check_equal_with_reltol(energy_total_t0, energy_total_t1, 3)
+    assert_equal_with_reltol(energy_total_t0, energy_total_t1, 3)
 
 
 def test_collision_detection(bhtree_for_collision_detection): # formerly test17
@@ -733,7 +685,7 @@ def test_test21(bhtree_test18):
     instance = bhtree_test18
 
     instance.parameters.epsilon_squared = (1e-5 | nbody_system.length)**2
-    check_equal_with_reltol(instance.potential_energy, -0.1 | nbody_system.energy, 5)
+    assert_equal_with_reltol(instance.potential_energy, -0.1 | nbody_system.energy, 5)
 
 
 def test_test22(bhtree_test18):
@@ -763,7 +715,7 @@ def test_test23(bhtree_test23):
     instance.evolve_model(0.1 | nbody_system.time)
     assert instance.particles[0].vy <= 0 | nbody_system.speed
 
-    check_equal_with_reltol(instance.particles[0].x, 0.1 | nbody_system.length, 4)
+    assert_equal_with_reltol(instance.particles[0].x, 0.1 | nbody_system.length, 4)
 
     instance.particles.new_channel_to(particles).copy()
     particles.vy = 1 | nbody_system.speed
@@ -772,7 +724,7 @@ def test_test23(bhtree_test23):
     instance.evolve_model(0.2 | nbody_system.time)
 
     assert instance.particles[0].vy > 0 | nbody_system.speed
-    check_equal_with_reltol(instance.particles[0].y, 0.1 | nbody_system.length, 4)
+    assert_equal_with_reltol(instance.particles[0].y, 0.1 | nbody_system.length, 4)
 
 
 
