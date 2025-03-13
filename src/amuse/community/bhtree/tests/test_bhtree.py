@@ -22,6 +22,17 @@ from amusetest_helpers import assert_equal_with_abstol
 from amusetest_helpers import assert_equal_with_reltol
 
 
+particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
+          "radius": [10.0, 20.0] | units.m,
+          "position": [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m,
+          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
+          })
+particle_inputs_test13 = (2, {"mass": [30.0, 30.0] | units.kg,
+          "radius": [1.0, 1.0] | units.m,
+          "position": [[-10.0, 0.0, 0.0], [10.0, 0.0, 0.0]] | units.m,
+          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
+          })
+
 
 # Factory to create bhtrees. Handles teardown for all
 # Follows https://docs.pytest.org/en/stable/how-to/fixtures.html#factories-as-fixtures
@@ -45,6 +56,15 @@ def make_bhtree():
 
 
 @fixture
+def particle_fixture(request):
+    num_particles, kwargs = request.param
+    particles = datamodel.Particles(num_particles)
+    for key, value in kwargs.items():
+        setattr(particles, key, value)
+    return particles
+
+
+@fixture
 def bhtree_msun(make_bhtree):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
     instance = make_bhtree(convert_nbody)
@@ -54,14 +74,14 @@ def bhtree_msun(make_bhtree):
     stars = datamodel.Stars(2)
 
     sun = stars[0]
-    sun.mass = units.MSun(1.0)
+    sun.mass = 1.0 | units.Msun
     sun.position = [0.0, 0.0, 0.0] | units.m
     sun.velocity = [0.0, 0.0, 0.0] | units.ms
-    sun.radius = units.RSun(1.0)
+    sun.radius = 1.0 | units.Rsun
 
     earth = stars[1]
-    earth.mass = units.kg(5.9736e24)
-    earth.radius = units.km(6371)
+    earth.mass = 5.9736e24 | units.kg
+    earth.radius = 6371 | units.km
     earth.position = [149.5e6, 0.0, 0.0] | units.km
     earth.velocity = [0.0, 29800, 0.0] | units.ms
 
@@ -137,7 +157,7 @@ def bhtree_for_epsilon_squared_test(make_bhtree):
 
     initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
     final_direction = []
-    for log_eps2 in range(-9, 10, 2):
+    for log_eps2 in range(-9, 10, 2): # TODO: use parameterize here? - but it's a fixture
         instance = make_bhtree(convert_nbody)
         instance.initialize_code()
         instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
@@ -169,6 +189,8 @@ def bhtree_to_test_energy(make_bhtree):
 
     yield instance
 
+# TODO: this could be replaced by combining make_bhtree and
+# a fixture for the particles? what would be the benefit? more composable?
 @fixture
 def bhtree_test18(make_bhtree): # used in test 18, 19, 20, 21, 22
     particles = datamodel.Particles(2)
@@ -208,7 +230,6 @@ def bhtree_test23(make_bhtree):
     instance.particles.add_particles(particles)
     instance.commit_particles()
 
-
     yield instance, particles
 
 
@@ -238,6 +259,9 @@ def bhtree_for_collision_detection(make_bhtree):
     instance.evolve_model(1.0 | nbody_system.time)
 
     yield instance, particles, collisions
+
+
+
 
 
 def test_test1(bhtree_msun):
@@ -312,18 +336,17 @@ def test_test6(bhtree_kg):
         assert "Error when calling 'get_mass' of a 'BHTree', errorcode is -1" in str(excinfo.value)
 
 
-def test_test7(bhtree_kg):
+
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_test7(bhtree_kg, particle_fixture):
     instance = bhtree_kg
-
-    particles = datamodel.Particles(2)
-    assert len(instance.particles) == 0 # TODO: what are we testing here?
-
-    particles.mass = [15.0, 30.0] | units.kg
-    particles.radius = [10.0, 20.0] | units.m
-    particles.position = [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-
-    instance.particles.add_particles(particles)
+    instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
     assert_equal_units(instance.get_mass(1), 15.0 | units.kg)
@@ -335,19 +358,15 @@ def test_test7(bhtree_kg):
     assert_equal_with_reltol(instance.particles.position[1][2], 60.0 | units.m)
 
 
-def test_test8(bhtree_kg):
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_test8(bhtree_kg, particle_fixture):
     instance = bhtree_kg
 
-    # TODO: this logic here is repeated above -> fixture. make "empty" fixture in units, and initialize a fixture with particles"
-    particles = datamodel.Particles(2)
-    #self.assertEqual(len(instance.particles), 0) # TODO: tested above already
-
-    particles.mass = [15.0, 30.0] | units.kg
-    particles.radius = [10.0, 20.0] | units.m
-    particles.position = [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-
-    instance.particles.add_particles(particles)
+    instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
     instance.particles.mass = [17.0, 33.0] | units.kg
@@ -407,18 +426,16 @@ def test_test10(bhtree_test10):
                 else:
                     assert_equal_with_reltol(f0[j], -1.0 * f1[j], 5)
 
-def test_test11(bhtree_kg):
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_test11(bhtree_kg, particle_fixture):
     instance = bhtree_kg
-
-    particles = datamodel.Particles(2)
-    #self.assertEqual(len(instance.particles), 0) # TODO: tested in other function too
-
-    particles.mass = [15.0, 30.0] | units.kg
-    particles.radius = [10.0, 20.0] | units.m
-    particles.position = [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-
-    instance.particles.add_particles(particles)
+    instance.particles.add_particles(particle_fixture)
 
     copyof = instance.particles.copy()
     assert_equal_with_reltol(copyof[1].mass, 30 | units.kg, 6)
@@ -429,21 +446,16 @@ def test_test11(bhtree_kg):
     assert_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
 
 
-def test_test12(bhtree_kg):
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_test12(bhtree_kg, particle_fixture):
     instance = bhtree_kg
 
-    particles = datamodel.Particles(2)
-    #self.assertEqual(len(instance.particles), 0) # checked above. delete?
-
-    particles.mass = [15.0, 30.0] | units.kg
-    particles.radius = [10.0, 20.0] | units.m
-    particles.position = [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-
-    instance.particles.add_particles(particles)
+    instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
-
-    copyof = instance.particles.copy()
 
     instance.set_state(1, 16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
                              1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms)
@@ -462,20 +474,18 @@ def test_test12(bhtree_kg):
         assert_equal_with_reltol(actual, expected)
 
 
-def test_test13(bhtree_kg):
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test13],
+    indirect=True
+)
+def test_test13(bhtree_kg, particle_fixture):
     instance = bhtree_kg
-    particles = datamodel.Particles(2)
-    # self.assertEqual(len(instance.particles), 0) # TODO: repeated. delete?
 
-    particles.mass = [30.0, 30.0] | units.kg
-    particles.radius = [1.0, 1.0] | units.m
-    particles.position = [[-10.0, 0.0, 0.0], [10.0, 0.0, 0.0]] | units.m
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-
-    instance.particles.add_particles(particles)
+    instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
-    #copyof = instance.particles.copy() # not accessed?
     com = instance.center_of_mass_position
     assert_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m), constants.precision)
 
@@ -635,7 +645,6 @@ def test_test19(bhtree_test18):
     start = time.time()
     instance.evolve_model(very_long_time_to_evolve)
     end = time.time()
-
 
     assert instance.stopping_conditions.timeout_detection.is_set()
     assert very_short_time_to_evolve.value_in(units.s) + 2 > end - start, "early stopping fails"
