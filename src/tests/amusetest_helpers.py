@@ -5,6 +5,7 @@ from amuse.units.quantities import none
 from amuse.units.quantities import to_quantity
 from amuse.units.quantities import is_quantity
 from pytest import approx
+from amuse.units import constants
 
 
 def check_comparable(x, y):
@@ -39,7 +40,7 @@ def assert_equal_with_abstol(x, y, digits, msg=""):
     assert x_num == approx(y_num, abs=10**(-digits)), msg
 
 
-def assert_equal_with_reltol(x, y, digits=8, msg="", in_units=None):
+def assert_equal_with_reltol(x, y, digits=constants.precision, msg="", in_units=None):
     """Ported from failUnlessAlmostRelativeEqual."""
     check_comparable(x, y)
     x_num, y_num = convert_to_numeric(x, y, in_units=in_units)
