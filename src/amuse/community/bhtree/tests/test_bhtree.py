@@ -33,6 +33,48 @@ particle_inputs_test13 = (2, {"mass": [30.0, 30.0] | units.kg,
           "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
           })
 
+particle_inputs_test18 = (
+        2, {"x": [0.0, 10.0] | nbody_system.length,
+            "y": 0 | nbody_system.length,
+            "z": 0 | nbody_system.length,
+            "radius": 0.005 | nbody_system.length,
+            "vx": 0 | nbody_system.speed,
+            "vy": 0 | nbody_system.speed,
+            "vz": 0 | nbody_system.speed,
+            "mass": 1.0 | nbody_system.mass,
+          })
+
+particle_inputs_test23 = (
+        2, {"x": [0.0, 10.0] | nbody_system.length,
+            "y": 0.0 | nbody_system.length,
+            "z": 0.0 | nbody_system.length,
+            "vx": 1.0 | nbody_system.speed,
+            "vy": 0.0 | nbody_system.speed,
+            "vz": 0.0 | nbody_system.speed,
+            "mass": 0.1 | nbody_system.mass,
+          })
+
+particle_inputs_test9 = (
+        2, {"mass": [1.0, 1.0] | nbody_system.mass,
+            "radius": [0.0001, 0.0001] | nbody_system.length,
+            "position": [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length,
+            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
+          })
+particle_inputs_test10 = (
+        6, {"mass": 1.0 | nbody_system.mass,
+            "radius": 0.0001 | nbody_system.length,
+            "position": [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 0.0, 1.0]] | nbody_system.length,
+            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
+          })
+particle_inputs_collision_detection = (
+        7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
+            "y": 0 | nbody_system.length,
+            "z": 0 | nbody_system.length,
+            "mass": 0.001 | nbody_system.mass,
+            "radius": 0.01 | nbody_system.length,
+            "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
+          })
+
 
 # Factory to create bhtrees. Handles teardown for all
 # Follows https://docs.pytest.org/en/stable/how-to/fixtures.html#factories-as-fixtures
@@ -64,6 +106,7 @@ def particle_fixture(request):
     return particles
 
 
+
 @fixture
 def bhtree_msun(make_bhtree):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
@@ -89,44 +132,13 @@ def bhtree_msun(make_bhtree):
     #instance.commit_particles() # this disables adding particles later on
     yield stars, instance
 
+
+# TODO: we could also make a nbody_system factory? similar to the parameters?
 @fixture
 def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
     instance = make_bhtree(convert_nbody)
     instance.commit_parameters()
-    yield instance
-
-
-@fixture
-def bhtree_test9(make_bhtree):
-    instance = make_bhtree()
-    instance.initialize_code()
-    instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
-
-    particles = datamodel.Particles(2)
-    particles.mass = [1.0, 1.0] | nbody_system.mass
-    particles.radius = [0.0001, 0.0001] | nbody_system.length
-    particles.position = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
-    instance.particles.add_particles(particles)
-
-    yield instance
-
-@fixture
-def bhtree_test10(make_bhtree):
-    instance = make_bhtree()
-    instance.initialize_code()
-    instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
-    instance.commit_parameters()
-
-    particles = datamodel.Particles(6)
-    particles.mass = 1.0 | nbody_system.mass
-    particles.radius = 0.00001 | nbody_system.length
-    particles.position = [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 0.0, 1.0]] | nbody_system.length
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
-    instance.particles.add_particles(particles)
-    instance.commit_particles()
-
     yield instance
 
 
@@ -188,79 +200,6 @@ def bhtree_to_test_energy(make_bhtree):
     instance.commit_particles()
 
     yield instance
-
-# TODO: this could be replaced by combining make_bhtree and
-# a fixture for the particles? what would be the benefit? more composable?
-@fixture
-def bhtree_test18(make_bhtree): # used in test 18, 19, 20, 21, 22
-    particles = datamodel.Particles(2)
-    particles.x = [0.0, 10.0] | nbody_system.length
-    particles.y = 0 | nbody_system.length
-    particles.z = 0 | nbody_system.length
-    particles.radius = 0.005 | nbody_system.length
-    particles.vx = 0 | nbody_system.speed
-    particles.vy = 0 | nbody_system.speed
-    particles.vz = 0 | nbody_system.speed
-    particles.mass = 1.0 | nbody_system.mass
-
-    instance = make_bhtree()
-    instance.initialize_code()
-
-    # NOTE: the below was used in tests 18, 19, 20. but tests still pass with this turned off.
-    #instance.parameters.epsilon_squared = (0.01 | nbody_system.length)**2
-
-    instance.particles.add_particles(particles)
-
-    yield instance
-
-
-@fixture
-def bhtree_test23(make_bhtree):
-
-    particles = datamodel.Particles(2)
-    particles.x = [0.0, 10.0] | nbody_system.length
-    particles.y = 0.0 | nbody_system.length
-    particles.z = 0.0 | nbody_system.length
-    particles.vx = 1.0 | nbody_system.speed # this is different
-    particles.vy = 0.0 | nbody_system.speed
-    particles.vz = 0.0 | nbody_system.speed
-    particles.mass = 0.1 | nbody_system.mass # this is different
-
-    instance = make_bhtree(redirection="none")
-    instance.particles.add_particles(particles)
-    instance.commit_particles()
-
-    yield instance, particles
-
-
-@fixture
-def bhtree_for_collision_detection(make_bhtree):
-    particles = datamodel.Particles(7)
-    particles.mass = 0.001 | nbody_system.mass
-    particles.radius = 0.01 | nbody_system.length
-    particles.x = [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length
-    particles.y = 0 | nbody_system.length
-    particles.z = 0 | nbody_system.length
-    particles.velocity = [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
-
-    instance = make_bhtree(redirection='none')
-    instance.initialize_code()
-    instance.parameters.set_defaults()
-
-    # TODO: make this an argument to the fixture?
-    # Uncommenting any of the following two lines will suppress collision detection
-# ~        instance.parameters.use_self_gravity = 0
-# ~        instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
-
-    instance.parameters.opening_angle = 0.1
-    instance.particles.add_particles(particles)
-    collisions = instance.stopping_conditions.collision_detection
-    collisions.enable()
-    instance.evolve_model(1.0 | nbody_system.time)
-
-    yield instance, particles, collisions
-
-
 
 
 
@@ -372,9 +311,24 @@ def test_test8(bhtree_kg, particle_fixture):
     instance.particles.mass = [17.0, 33.0] | units.kg
     assert_equal_units(instance.get_mass(1), 17.0 | units.kg)
 
+    # TODO: what is this doing here?? did I forget something?
+    particles = datamodel.Particles(2)
+    particles.mass = [1.0, 1.0] | nbody_system.mass
+    particles.radius = [0.0001, 0.0001] | nbody_system.length
+    particles.position = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length
+    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
 
-def test_test9(bhtree_test9):
-    instance = bhtree_test9
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test9],
+    indirect=True
+)
+def test_test9(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
+    instance.particles.add_particles(particle_fixture)
 
     zero = 0.0 | nbody_system.length
     gravity = instance.get_gravity_at_point(zero, 1.0 | nbody_system.length, zero, zero)
@@ -400,8 +354,15 @@ def test_test9(bhtree_test9):
         assert_equal_with_reltol(potential0, potential1, 5)
 
 
-def test_test10(bhtree_test10):
-    instance = bhtree_test10
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test10],
+    indirect=True
+)
+def test_test10(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles() # TODO: not strictly necessary
 
     zero = 0.0 | nbody_system.length
     gravity = instance.get_gravity_at_point(zero, zero, zero, zero)
@@ -579,8 +540,22 @@ def test_total_energy(bhtree_to_test_energy): # formerly test16
     assert_equal_with_reltol(energy_total_t0, energy_total_t1, 3)
 
 
-def test_collision_detection(bhtree_for_collision_detection): # formerly test17
-    instance, particles, collisions = bhtree_for_collision_detection
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_collision_detection ],
+    indirect=True
+)
+def test_collision_detection(make_bhtree, particle_fixture): # formerly test17
+    instance = make_bhtree(redirection="none")
+    instance.initialize_code()
+    instance.parameters.set_defaults()
+    instance.parameters.opening_angle = 0.1
+    particles = particle_fixture
+    instance.particles.add_particles(particles)
+    collisions = instance.stopping_conditions.collision_detection
+    collisions.enable()
+    instance.evolve_model(1.0 | nbody_system.time)
 
     assert collisions.is_set(), "collisions not set"
     assert instance.model_time < 0.5 | nbody_system.time, "time too big"
@@ -618,8 +593,17 @@ def test_collision_detection(bhtree_for_collision_detection): # formerly test17
 
 # TODO: what is the additional benefit of this test? the evolution of the model
 # is also tested elsewhere I think?
-def test_test18(bhtree_test18):
-    instance = bhtree_test18
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test18],
+    indirect=True
+)
+def test_test18(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    #instance = bhtree_test18
+    instance.particles.add_particles(particle_fixture)
     instance.stopping_conditions.number_of_steps_detection.enable()
     instance.parameters.stopping_conditions_number_of_steps = 2
     assert instance.parameters.stopping_conditions_number_of_steps == 2
@@ -630,8 +614,14 @@ def test_test18(bhtree_test18):
 
 
 
-def test_test19(bhtree_test18):
-    instance = bhtree_test18
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test18],
+    indirect=True
+)
+def test_test19(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.particles.add_particles(particle_fixture)
 
     instance.stopping_conditions.timeout_detection.enable()
 
@@ -651,8 +641,15 @@ def test_test19(bhtree_test18):
 
     instance.cleanup_code()
 
-def test_test20(bhtree_test18):
-    instance = bhtree_test18
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test18],
+    indirect=True
+)
+def test_test20(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.particles.add_particles(particle_fixture)
 
     very_short_time_to_evolve = 1 | units.s
 
@@ -673,15 +670,28 @@ def test_test20(bhtree_test18):
     assert codeparticles1 is not codeparticles3, "clean up does not work"
 
 
-def test_test21(bhtree_test18):
-    instance = bhtree_test18
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test18],
+    indirect=True
+)
+def test_test21(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.particles.add_particles(particle_fixture)
 
     instance.parameters.epsilon_squared = (1e-5 | nbody_system.length)**2
     assert_equal_with_reltol(instance.potential_energy, -0.1 | nbody_system.energy, 5)
 
 
-def test_test22(bhtree_test18):
-    instance = bhtree_test18
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test18],
+    indirect=True
+)
+def test_test22(make_bhtree, particle_fixture):
+    instance = make_bhtree()
+    instance.particles.add_particles(particle_fixture)
 
     instance.commit_particles()
     p = datamodel.Particle(
@@ -702,8 +712,19 @@ def test_test22(bhtree_test18):
             "cannot add new particle with different radius"
 
 
-def test_test23(bhtree_test23):
-    instance, particles = bhtree_test23
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_test23],
+    indirect=True
+)
+def test_test23(make_bhtree, particle_fixture):
+    instance = make_bhtree(redirection="none")
+    particles = particle_fixture
+    instance.particles.add_particles(particles)
+    instance.commit_particles()
+
+    #instance, particles = bhtree_test23
     instance.evolve_model(0.1 | nbody_system.time)
     assert instance.particles[0].vy <= 0 | nbody_system.speed
 
