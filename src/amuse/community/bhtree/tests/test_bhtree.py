@@ -8,7 +8,6 @@ import pytest
 from amuse.community.bhtree.interface import BHTree
 from amuse.support.exceptions import AmuseException
 from amuse.support.core import OrderedDictionary
-from amuse.units import constants
 from amuse.units import nbody_system
 from amuse.units import units
 from amuse.units import quantities
@@ -21,6 +20,7 @@ from amusetest_helpers import assert_equal_units
 from amusetest_helpers import assert_equal_with_abstol
 from amusetest_helpers import assert_equal_with_reltol
 
+# TODO: rename assert_equal_units to assert_equal?
 
 particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
           "radius": [10.0, 20.0] | units.m,
@@ -133,7 +133,6 @@ def bhtree_msun(make_bhtree):
     yield stars, instance
 
 
-# TODO: we could also make a nbody_system factory? similar to the parameters?
 @fixture
 def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
@@ -243,7 +242,6 @@ def test_test4(bhtree_kg):
 
 def test_test5(make_bhtree):
     instance = make_bhtree()
-    instance.commit_parameters() # TODO: can we move this away?
 
     index = instance.new_particle(
         15.0 | nbody_system.mass,
@@ -262,7 +260,6 @@ def test_test6(bhtree_kg):
     indices = instance.new_particle(
         [15.0, 30.0] | units.kg,
         [10.0, 20.0] | units.m, [20.0, 40.0] | units.m, [30.0, 50.0] | units.m,
-        # 1.0 | units.m/units.s, 1.0 | units.m/units.s, 3.0 | units.m/units.s
         [0.0, 0.01] | units.m/units.s, [0.0, 0.01] | units.m/units.s, [0.0, 0.01] | units.m/units.s,
         [10.0, 20.0] | units.m
     )
@@ -275,26 +272,40 @@ def test_test6(bhtree_kg):
         assert "Error when calling 'get_mass' of a 'BHTree', errorcode is -1" in str(excinfo.value)
 
 
-
-
-
 @pytest.mark.parametrize(
-    "particle_fixture",
-    [particle_inputs_kg],
-    indirect=True
+    "particle_fixture, raw_particle_data",
+    [(particle_inputs_kg, particle_inputs_kg)],
+    indirect=["particle_fixture"]
 )
-def test_test7(bhtree_kg, particle_fixture):
+def test_test7(bhtree_kg, particle_fixture, raw_particle_data):
     instance = bhtree_kg
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
-    assert_equal_units(instance.get_mass(1), 15.0 | units.kg)
+    expected_count = raw_particle_data[0]
+    assert len(instance.particles) == expected_count
 
-    assert_equal_with_reltol(instance.get_position(1)[2], 30.0 | units.m)
+    expected_mass = raw_particle_data[1]["mass"]
+    for idx in range(expected_count):
+        assert_equal_units(instance.get_mass(idx+1), expected_mass[idx])
 
-    assert len(instance.particles) == 2
-    assert_equal_with_reltol(instance.particles.mass[1], 30.0 | units.kg)
-    assert_equal_with_reltol(instance.particles.position[1][2], 60.0 | units.m)
+    expected_radius = raw_particle_data[1]["radius"]
+    for idx in range(expected_count):
+        assert_equal_units(instance.get_radius(idx+1), expected_radius[idx])
+
+    expected_position = raw_particle_data[1]["position"]
+    for idx in range(expected_count):
+        pos = instance.get_position(idx+1)
+        pos_e = expected_position[idx]
+        for x, x_e in zip(pos, pos_e):
+            assert_equal_with_reltol(x, x_e)
+
+    expected_velocity = raw_particle_data[1]["velocity"]
+    for idx in range(expected_count):
+        vel = instance.get_velocity(idx+1)
+        vel_e = expected_velocity[idx]
+        for x, x_e in zip(vel, vel_e):
+            assert_equal_with_reltol(x, x_e)
 
 
 @pytest.mark.parametrize(
@@ -310,14 +321,6 @@ def test_test8(bhtree_kg, particle_fixture):
 
     instance.particles.mass = [17.0, 33.0] | units.kg
     assert_equal_units(instance.get_mass(1), 17.0 | units.kg)
-
-    # TODO: what is this doing here?? did I forget something?
-    particles = datamodel.Particles(2)
-    particles.mass = [1.0, 1.0] | nbody_system.mass
-    particles.radius = [0.0001, 0.0001] | nbody_system.length
-    particles.position = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length
-    particles.velocity = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
-
 
 
 @pytest.mark.parametrize(
@@ -390,16 +393,18 @@ def test_test10(make_bhtree, particle_fixture):
 
 
 @pytest.mark.parametrize(
-    "particle_fixture",
-    [particle_inputs_kg],
-    indirect=True
+    "particle_fixture, raw_particle_data",
+    [(particle_inputs_kg, particle_inputs_kg)],
+    indirect=["particle_fixture"]
 )
-def test_test11(bhtree_kg, particle_fixture):
+def test_test11(bhtree_kg, particle_fixture, raw_particle_data):
     instance = bhtree_kg
     instance.particles.add_particles(particle_fixture)
 
     copyof = instance.particles.copy()
-    assert_equal_with_reltol(copyof[1].mass, 30 | units.kg, 6)
+    id_to_check = 1
+    expected_mass = raw_particle_data[1]["mass"][id_to_check]
+    assert_equal_with_reltol(copyof[id_to_check].mass, expected_mass, 6)
 
     copyof[1].mass = 35 | units.kg
     copyof.copy_values_of_all_attributes_to(instance.particles)
@@ -418,21 +423,21 @@ def test_test12(bhtree_kg, particle_fixture):
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
-    instance.set_state(1, 16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
-                             1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms)
+    state_values = [16 | units.kg,
+             20.0 | units.m,
+             40.0 | units.m,
+             60.0 | units.m,
+             1.0 | units.ms,
+             1.0 | units.ms,
+             1.0 | units.ms]
+    instance.set_state(1, *state_values)
+    expected_values = state_values + [0 | units.m]
 
     curr_state = instance.get_state(1)
-    for expected, actual in zip((16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
-                             1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms, 0 | units.m), curr_state):
+    for expected, actual in zip(expected_values, curr_state):
         assert_equal_with_reltol(actual, expected)
 
-    # TODO: is this just repeating the code from above
-    instance.set_state(1, 16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
-                             1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms, 20.0 | units.m)
-    curr_state = instance.get_state(1)
-    for expected, actual in zip((16 | units.kg, 20.0 | units.m, 40.0 | units.m, 60.0 | units.m,
-                             1.0 | units.ms, 1.0 | units.ms, 1.0 | units.ms, 20 | units.m), curr_state):
-        assert_equal_with_reltol(actual, expected)
+    # NOTE: dropped duplicated code in original test12
 
 
 
@@ -448,7 +453,7 @@ def test_test13(bhtree_kg, particle_fixture):
     instance.commit_particles()
 
     com = instance.center_of_mass_position
-    assert_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m), constants.precision)
+    assert_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m))
 
 
 def test_bhtree_parameters(bhtree_test14):
