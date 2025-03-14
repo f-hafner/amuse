@@ -1,6 +1,6 @@
 
 # -*- coding: utf-8 -*-
-import numpy
+import numpy as np
 import time
 import math
 import pytest
@@ -163,7 +163,7 @@ def bhtree_for_epsilon_squared_test(make_bhtree):
     earth.mass = 5.9736e24 | units.kg
     earth.radius = 6371.0 | units.km
     earth.position = [0.0, 1.0, 0.0] | units.AU
-    earth.velocity = [2.0*numpy.pi, -0.0001, 0.0] | units.AU / units.yr
+    earth.velocity = [2.0*np.pi, -0.0001, 0.0] | units.AU / units.yr
 
     initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
     final_direction = []
@@ -182,7 +182,7 @@ def bhtree_for_epsilon_squared_test(make_bhtree):
 
 @fixture
 def bhtree_to_test_energy(make_bhtree):
-    numpy.random.seed(0)
+    np.random.seed(0)
     number_of_stars = 2
     stars = plummer.new_plummer_model(number_of_stars)
     stars.radius = 0.00001 | nbody_system.length
@@ -322,8 +322,8 @@ def test_test8(bhtree_kg, particle_fixture):
     assert_equal(instance.get_mass(1), 17.0 | units.kg)
 
 
-# NOTE: 0.125 is the default value for epsilon_squared; put her to make things explicit
-# NOTE: empty bhtree can be reused across functions/combinations?
+# NOTE: 0.125 is the default value for epsilon_squared;
+# it is put here to make things explicit.
 @pytest.mark.parametrize(
     ("particle_fixture", "point", "epsilon2"),
     [(particle_inputs_test9, 1.0, 0.00001), (particle_inputs_test10, 0.0, 0.125)],
@@ -342,8 +342,6 @@ def test_gravity_at_origin(make_bhtree, particle_fixture, point, epsilon2):
         assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
 
-# TODO: test 9 and 10 seem quite similar, but I did not see an obvious way to combine them
-# Perhaps a domain expert would know
 @pytest.mark.parametrize(
     "particle_fixture",
     [particle_inputs_test9],
@@ -376,8 +374,6 @@ def test_test9(make_bhtree, particle_fixture, x):
             assert_equal_with_reltol(gravity1[i], 0 | nbody_system.acceleration, 3)
 
 
-# NOTE: the next two tests replace the original test10
-# TODO: now the tests take longer. why? can we fix it? I think it has to do with the fixture for bhtree_instance
 @pytest.fixture
 def bhtree_instance(make_bhtree, particle_fixture):
     """Create and initialize a BHTree instance once for each particle fixture."""
@@ -460,9 +456,6 @@ def test_test12(bhtree_kg, particle_fixture):
     for expected, actual in zip(expected_values, curr_state):
         assert_equal_with_reltol(actual, expected)
 
-    # NOTE: dropped duplicated code in original test12
-
-
 
 @pytest.mark.parametrize(
     "particle_fixture",
@@ -479,8 +472,6 @@ def test_test13(bhtree_kg, particle_fixture):
     expected = quantities.new_quantity(0.0, units.m)
     assert_equal_with_reltol(com[0], expected)
 
-# TODO: these tests with setting params - do we want to keep them?
-# do we want all of them (ie, setting multiple values sequentially?)
 def test_bhtree_parameters(bhtree_test14):
     instance = bhtree_test14
 
@@ -596,7 +587,6 @@ def test_collision_detection(make_bhtree, particle_fixture): # formerly test17
     right = collisions.particles(0).radius + collisions.particles(1).radius
     assert all(left < right) # TODO: useful error message?
 
-    # TODO: this is doing some updates here - put code elsewhere?
     sticky_merged = datamodel.Particles(len(collisions.particles(0)))
     sticky_merged.mass = collisions.particles(0).mass + collisions.particles(1).mass
     sticky_merged.radius = collisions.particles(0).radius
@@ -618,10 +608,6 @@ def test_collision_detection(make_bhtree, particle_fixture): # formerly test17
     left = abs(collisions.particles(0).x - collisions.particles(1).x)
     right = collisions.particles(0).radius + collisions.particles(1).radius
     assert all(left < right) # TODO: useful error message?
-
-
-# TODO: what is the additional benefit of this test? the evolution of the model
-# is also tested elsewhere I think?
 
 
 @pytest.mark.parametrize(

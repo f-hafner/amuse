@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
-import numpy
+import numpy as np
 from pytest import approx
 from pytest import fixture
 from amuse.community.bhtree.interface import BHTreeInterface
-
-# TODO?
-# - create fixture for interface with multiple particles?
-# - fixture/helper fct for creating particles? -> what is the index test doing exactly?
 
 
 @fixture
@@ -80,22 +76,6 @@ def test_create_multiple_particles_at_once(interface):
     assert interface.get_number_of_particles()["number_of_particles"] == 2
 
 
-# tests 5 and 7 in the original file were duplicates(?)
-#def test_get_state_for_multiple_particles(interface):
-#    interface.new_particle([10, 20], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 1])
-#    interface.commit_particles()
-#    retrieved_state = interface.get_state(1)
-#
-#    assert retrieved_state["mass"] == 10.0
-#    assert retrieved_state["radius"] == 1
-#
-#    retrieved_state = interface.get_state([1, 2])
-#    assert retrieved_state["mass"][1] == 20.0
-#    assert interface.get_number_of_particles()["number_of_particles"] == 2
-#    interface.cleanup_code()
-#    interface.stop()
-
-
 def test_particle_id_after_delete_and_new(interface):
     ids = []
     for i in [1, 2, 3]:
@@ -120,5 +100,5 @@ def test_calculate_gravitational_potential(interface):
     assert errorcode == 0
 
     # NOTE: -8 is taken from old code; it is semi-automated there
-    assert potential == approx(-10.0 / numpy.sqrt(2.0**2 + 0.1**2), rel=1e-8)
+    assert potential == approx(-10.0 / np.sqrt(2.0**2 + 0.1**2), rel=1e-8)
 
