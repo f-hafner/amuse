@@ -16,11 +16,9 @@ from amuse import datamodel
 from amuse.ic import plummer
 from pytest import fixture
 
-from amusetest_helpers import assert_equal_units
+from amusetest_helpers import assert_equal
 from amusetest_helpers import assert_equal_with_abstol
 from amusetest_helpers import assert_equal_with_reltol
-
-# TODO: rename assert_equal_units to assert_equal?
 
 particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
           "radius": [10.0, 20.0] | units.m,
@@ -236,8 +234,8 @@ def test_test4(bhtree_kg):
         10.0 | units.m
     )
     bhtree.commit_particles()
-    assert_equal_units(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
-    assert_equal_units(bhtree.get_radius(index), 10.0 | units.m)
+    assert_equal(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
+    assert_equal(bhtree.get_radius(index), 10.0 | units.m)
 
 
 def test_test5(make_bhtree):
@@ -250,8 +248,8 @@ def test_test5(make_bhtree):
         10.0 | nbody_system.length
     )
     instance.commit_particles()
-    assert_equal_units(instance.get_radius(index), 10.0 | nbody_system.length)
-    assert_equal_units(instance.get_mass(index), 15.0 | nbody_system.mass)
+    assert_equal(instance.get_radius(index), 10.0 | nbody_system.length)
+    assert_equal(instance.get_mass(index), 15.0 | nbody_system.mass)
 
 
 
@@ -265,7 +263,7 @@ def test_test6(bhtree_kg):
     )
     instance.commit_particles()
 
-    assert_equal_units(instance.get_mass(indices[0]), 15.0 | units.kg)
+    assert_equal(instance.get_mass(indices[0]), 15.0 | units.kg)
 
     with pytest.raises(AmuseException) as excinfo:
         instance.get_mass([4, 5])
@@ -287,11 +285,11 @@ def test_test7(bhtree_kg, particle_fixture, raw_particle_data):
 
     expected_mass = raw_particle_data[1]["mass"]
     for idx in range(expected_count):
-        assert_equal_units(instance.get_mass(idx+1), expected_mass[idx])
+        assert_equal(instance.get_mass(idx+1), expected_mass[idx])
 
     expected_radius = raw_particle_data[1]["radius"]
     for idx in range(expected_count):
-        assert_equal_units(instance.get_radius(idx+1), expected_radius[idx])
+        assert_equal(instance.get_radius(idx+1), expected_radius[idx])
 
     expected_position = raw_particle_data[1]["position"]
     for idx in range(expected_count):
@@ -320,7 +318,7 @@ def test_test8(bhtree_kg, particle_fixture):
     instance.commit_particles()
 
     instance.particles.mass = [17.0, 33.0] | units.kg
-    assert_equal_units(instance.get_mass(1), 17.0 | units.kg)
+    assert_equal(instance.get_mass(1), 17.0 | units.kg)
 
 
 @pytest.mark.parametrize(

@@ -48,7 +48,7 @@ def assert_equal_with_reltol(x, y, digits=constants.precision, msg="", in_units=
 
 
 # TODO: rename the above with units? or find better name in general
-def assert_equal_units(x, y, msg="", in_units=None):
+def assert_equal(x, y, msg="", in_units=None):
     """Ported from failUnlessEqual."""
     check_comparable(x, y)
     x_num, y_num = convert_to_numeric(x, y, in_units)
