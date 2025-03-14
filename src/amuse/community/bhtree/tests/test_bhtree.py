@@ -320,40 +320,57 @@ def test_test8(bhtree_kg, particle_fixture):
     instance.particles.mass = [17.0, 33.0] | units.kg
     assert_equal(instance.get_mass(1), 17.0 | units.kg)
 
+# TODO: test 9 and 10 seem quite similar, but I could not figure out if
+# NOTE: 0.125 is the default value for epsilon_squared; put her to make things explicit
+# NOTE: empty bhtree can be reused across functions/combinations?
+@pytest.mark.parametrize(
+    ("particle_fixture", "point", "epsilon2"),
+    [(particle_inputs_test9, 1.0, 0.00001), (particle_inputs_test10, 0.0, 0.125)],
+    indirect=["particle_fixture"]
+)
+def test_gravity_at_origin(make_bhtree, particle_fixture, point, epsilon2):
+    """Test gravity at the origin point."""
+    instance = make_bhtree()
+    instance.parameters.epsilon_squared = epsilon2 | nbody_system.length**2
+    instance.particles.add_particles(particle_fixture)
+
+    zero = 0.0 | nbody_system.length
+    point = point | nbody_system.length
+    gravity = instance.get_gravity_at_point(zero, point, zero, zero)
+    for f in gravity:
+        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
+
 
 @pytest.mark.parametrize(
     "particle_fixture",
     [particle_inputs_test9],
     indirect=True
 )
-def test_test9(make_bhtree, particle_fixture):
+@pytest.mark.parametrize("x", [0.25, 0.5, 0.75])
+def test_test9(make_bhtree, particle_fixture, x):
     instance = make_bhtree()
     instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
     instance.particles.add_particles(particle_fixture)
 
     zero = 0.0 | nbody_system.length
-    gravity = instance.get_gravity_at_point(zero, 1.0 | nbody_system.length, zero, zero)
-    for f in gravity:
-        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
-    for x in (0.25, 0.5, 0.75): # TODO: this we should put into a pytest parameterize
-        x0 = x | nbody_system.length
-        x1 = (2.0 - x) | nbody_system.length
-        potential0 = instance.get_potential_at_point(zero, x0, zero, zero)
-        potential1 = instance.get_potential_at_point(zero, x1, zero, zero)
-        fx0, fy0, fz0 = instance.get_gravity_at_point(zero, x0, zero, zero)
-        fx1, fy1, fz1 = instance.get_gravity_at_point(zero, x1, zero, zero)
+    x0 = x | nbody_system.length
+    x1 = (2.0 - x) | nbody_system.length
+    potential0 = instance.get_potential_at_point(zero, x0, zero, zero)
+    potential1 = instance.get_potential_at_point(zero, x1, zero, zero)
+    assert_equal_with_reltol(potential0, potential1, 5)
 
-        assert_equal_with_reltol(fy0, 0.0 | nbody_system.acceleration, 3)
-        assert_equal_with_reltol(fz0, 0.0 | nbody_system.acceleration, 3)
-        assert_equal_with_reltol(fy1, 0.0 | nbody_system.acceleration, 3)
-        assert_equal_with_reltol(fz1, 0.0 | nbody_system.acceleration, 3)
-
-        assert_equal_with_reltol(fx0, -1.0 * fx1, 5)
-        fx = (-1.0 / (x0**2) + 1.0 / (x1**2)) * (1.0 | nbody_system.length ** 3 / nbody_system.time ** 2)
-        assert_equal_with_reltol(fx, fx0, 2)
-        assert_equal_with_reltol(potential0, potential1, 5)
-
+    gravity0 = instance.get_gravity_at_point(zero, x0, zero, zero)
+    gravity1 = instance.get_gravity_at_point(zero, x1, zero, zero)
+    for i in range(len(gravity0)):
+        if i == 0:
+            fx0_expected = (-1.0 / (x0**2) + 1.0 / (x1**2)) * (1.0 | nbody_system.length ** 3 / nbody_system.time ** 2)
+            assert_equal_with_reltol(gravity0[i], fx0_expected, 2)
+            assert_equal_with_reltol(gravity0[i], -1.0 * gravity1[i], 5)
+            pass
+        else:
+            assert_equal_with_reltol(gravity0[i], 0 | nbody_system.acceleration, 3)
+            assert_equal_with_reltol(gravity1[i], 0 | nbody_system.acceleration, 3)
 
 
 # NOTE: the next two tests replace the original test10
@@ -365,20 +382,6 @@ def bhtree_instance(make_bhtree, particle_fixture):
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
     return instance
-
-
-@pytest.mark.parametrize(
-    "particle_fixture",
-    [particle_inputs_test10],
-    indirect=True
-)
-def test_gravity_at_origin(bhtree_instance):
-    """Test gravity at the origin point."""
-    zero = 0.0 | nbody_system.length
-    gravity = bhtree_instance.get_gravity_at_point(zero, zero, zero, zero)
-    for f in gravity:
-        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
-
 
 @pytest.mark.parametrize(
     "particle_fixture",
