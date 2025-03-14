@@ -16,9 +16,9 @@ from amuse import datamodel
 from amuse.ic import plummer
 from pytest import fixture
 
-from amusetest_helpers import assert_equal
-from amusetest_helpers import assert_equal_with_abstol
-from amusetest_helpers import assert_equal_with_reltol
+from equality_with_units import assert_equal
+from equality_with_units import assert_equal_with_abstol
+from equality_with_units import assert_equal_with_reltol
 
 particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
           "radius": [10.0, 20.0] | units.m,
