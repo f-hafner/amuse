@@ -97,6 +97,7 @@ def make_bhtree():
 
 @fixture
 def particle_fixture(request):
+    """Create particles from input arguments."""
     num_particles, kwargs = request.param
     particles = datamodel.Particles(num_particles)
     for key, value in kwargs.items():
@@ -166,7 +167,7 @@ def bhtree_for_epsilon_squared_test(make_bhtree):
 
     initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
     final_direction = []
-    for log_eps2 in range(-9, 10, 2): # TODO: use parameterize here? - but it's a fixture
+    for log_eps2 in range(-9, 10, 2):
         instance = make_bhtree(convert_nbody)
         instance.initialize_code()
         instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
@@ -320,7 +321,7 @@ def test_test8(bhtree_kg, particle_fixture):
     instance.particles.mass = [17.0, 33.0] | units.kg
     assert_equal(instance.get_mass(1), 17.0 | units.kg)
 
-# TODO: test 9 and 10 seem quite similar, but I could not figure out if
+
 # NOTE: 0.125 is the default value for epsilon_squared; put her to make things explicit
 # NOTE: empty bhtree can be reused across functions/combinations?
 @pytest.mark.parametrize(
@@ -341,6 +342,8 @@ def test_gravity_at_origin(make_bhtree, particle_fixture, point, epsilon2):
         assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
 
+# TODO: test 9 and 10 seem quite similar, but I did not see an obvious way to combine them
+# Perhaps a domain expert would know
 @pytest.mark.parametrize(
     "particle_fixture",
     [particle_inputs_test9],
@@ -473,13 +476,14 @@ def test_test13(bhtree_kg, particle_fixture):
     instance.commit_particles()
 
     com = instance.center_of_mass_position
-    assert_equal_with_reltol(com[0], quantities.new_quantity(0.0, units.m))
+    expected = quantities.new_quantity(0.0, units.m)
+    assert_equal_with_reltol(com[0], expected)
 
-
+# TODO: these tests with setting params - do we want to keep them?
+# do we want all of them (ie, setting multiple values sequentially?)
 def test_bhtree_parameters(bhtree_test14):
     instance = bhtree_test14
 
-    # TODO: combine the testing of legacy interface and instance.parameters? or parameterize?
     eps2 = instance.legacy_interface.get_epsilon_squared()
     assert isinstance(eps2, OrderedDictionary)
     assert eps2.keys() == ["epsilon_squared", "__result"]
@@ -568,7 +572,7 @@ def test_total_energy(bhtree_to_test_energy): # formerly test16
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_collision_detection ],
+    [particle_inputs_collision_detection],
     indirect=True
 )
 def test_collision_detection(make_bhtree, particle_fixture): # formerly test17
@@ -749,7 +753,6 @@ def test_test23(make_bhtree, particle_fixture):
     instance.particles.add_particles(particles)
     instance.commit_particles()
 
-    #instance, particles = bhtree_test23
     instance.evolve_model(0.1 | nbody_system.time)
     assert instance.particles[0].vy <= 0 | nbody_system.speed
 
