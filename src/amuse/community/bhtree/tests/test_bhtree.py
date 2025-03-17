@@ -107,32 +107,6 @@ def particle_fixture(request):
 
 
 @fixture
-def bhtree_msun(make_bhtree):
-    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
-    instance = make_bhtree(convert_nbody)
-    instance.parameters.epsilon_squared = 0.001 | units.AU**2
-    instance.commit_parameters()
-
-    stars = datamodel.Stars(2)
-
-    sun = stars[0]
-    sun.mass = 1.0 | units.Msun
-    sun.position = [0.0, 0.0, 0.0] | units.m
-    sun.velocity = [0.0, 0.0, 0.0] | units.ms
-    sun.radius = 1.0 | units.Rsun
-
-    earth = stars[1]
-    earth.mass = 5.9736e24 | units.kg
-    earth.radius = 6371 | units.km
-    earth.position = [149.5e6, 0.0, 0.0] | units.km
-    earth.velocity = [0.0, 29800, 0.0] | units.ms
-
-    instance.particles.add_particles(stars)
-    #instance.commit_particles() # this disables adding particles later on
-    yield stars, instance
-
-
-@fixture
 def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
     instance = make_bhtree(convert_nbody)
@@ -201,9 +175,30 @@ def bhtree_to_test_energy(make_bhtree):
 
 
 
-def test_test1(bhtree_msun):
-    stars, bhtree = bhtree_msun
-    sun, earth = stars
+def test_test1(make_bhtree):
+    # Set up the tree
+    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
+    bhtree = make_bhtree(convert_nbody)
+    bhtree.parameters.epsilon_squared = 0.001 | units.AU**2
+    bhtree.commit_parameters()
+
+    stars = datamodel.Stars(2)
+
+    sun = stars[0]
+    sun.mass = 1.0 | units.Msun
+    sun.position = [0.0, 0.0, 0.0] | units.m
+    sun.velocity = [0.0, 0.0, 0.0] | units.ms
+    sun.radius = 1.0 | units.Rsun
+
+    earth = stars[1]
+    earth.mass = 5.9736e24 | units.kg
+    earth.radius = 6371 | units.km
+    earth.position = [149.5e6, 0.0, 0.0] | units.km
+    earth.velocity = [0.0, 29800, 0.0] | units.ms
+
+    bhtree.particles.add_particles(stars)
+
+    # Tests
     postion_at_start = earth.position.value_in(units.AU)[0]
 
     bhtree.evolve_model(365.0 | units.day)
