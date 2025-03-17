@@ -104,6 +104,7 @@ def particle_fixture(request):
 
 # TODO: should this be available at the module level? -- then we'd need to clean the tree at the end of each test?
 # it is called 6x
+@fixture
 def bhtree(make_bhtree):
     print("bhtree created")
     yield make_bhtree()
@@ -310,12 +311,11 @@ def test_test9(bhtree, particle_fixture, x):
 
 # TODO: what is this doing here? should this not move up? can we replace with with plain_bhtree fixture?
 @pytest.fixture
-def bhtree_instance(make_bhtree, particle_fixture):
+def bhtree_instance(bhtree, particle_fixture):
     """Create and initialize a BHTree instance once for each particle fixture."""
-    instance = make_bhtree()
-    instance.particles.add_particles(particle_fixture)
-    instance.commit_particles()
-    return instance
+    bhtree.particles.add_particles(particle_fixture)
+    bhtree.commit_particles()
+    return bhtree
 
 @pytest.mark.parametrize(
     "particle_fixture",
