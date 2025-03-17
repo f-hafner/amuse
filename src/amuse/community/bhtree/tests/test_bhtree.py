@@ -111,27 +111,6 @@ def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     yield instance
 
 
-@fixture
-def bhtree_to_test_energy(make_bhtree):
-    np.random.seed(0)
-    number_of_stars = 2
-    stars = plummer.new_plummer_model(number_of_stars)
-    stars.radius = 0.00001 | nbody_system.length
-    stars.scale_to_standard()
-
-    instance = make_bhtree()
-    instance.initialize_code()
-    instance.parameters.epsilon_squared = (1.0 / 20.0 / (number_of_stars**0.33333) | nbody_system.length)**2
-    instance.parameters.timestep = 0.004 | nbody_system.time
-    instance.parameters.timestep = 0.00001 | nbody_system.time
-    instance.commit_parameters()
-    instance.particles.add_particles(stars)
-    instance.commit_particles()
-
-    yield instance
-
-
-
 def test_test1(make_bhtree):
     # Set up the tree
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
@@ -532,9 +511,25 @@ def test_effect_of_bhtree_param_epsilon_squared(make_bhtree):
     delta = [abs(final_direction[i+1]-final_direction[i]) for i in range(len(final_direction)-1)]
     assert max(delta) == delta[len(final_direction)//2 - 1]
 
-def test_total_energy(bhtree_to_test_energy): # formerly test16
-    instance = bhtree_to_test_energy
 
+def test_total_energy(make_bhtree): # formerly test16
+    # Setup
+    np.random.seed(0)
+    number_of_stars = 2
+    stars = plummer.new_plummer_model(number_of_stars)
+    stars.radius = 0.00001 | nbody_system.length
+    stars.scale_to_standard()
+
+    instance = make_bhtree()
+    instance.initialize_code()
+    instance.parameters.epsilon_squared = (1.0 / 20.0 / (number_of_stars**0.33333) | nbody_system.length)**2
+    instance.parameters.timestep = 0.004 | nbody_system.time
+    instance.parameters.timestep = 0.00001 | nbody_system.time
+    instance.commit_parameters()
+    instance.particles.add_particles(stars)
+    instance.commit_particles()
+
+    # Test
     energy_total_t0 = instance.potential_energy + instance.kinetic_energy
     request = instance.evolve_model.asynchronous(1.0 | nbody_system.time)
     request.result()
