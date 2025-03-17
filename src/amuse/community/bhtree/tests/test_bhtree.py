@@ -112,46 +112,6 @@ def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
 
 
 @fixture
-def bhtree_test14(make_bhtree):
-    convert_nbody = nbody_system.nbody_to_si(1.0 | units.yr, 1.0 | units.AU)
-    instance = make_bhtree(convert_nbody)
-    instance.commit_parameters()
-    yield instance
-
-
-@fixture
-def bhtree_for_epsilon_squared_test(make_bhtree):
-    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
-
-    particles = datamodel.Particles(2)
-    sun = particles[0]
-    sun.mass = 1.0 | units.MSun
-    sun.position = [0.0, 0.0, 0.0] | units.AU
-    sun.velocity = [0.0, 0.0, 0.0] | units.AU / units.yr
-    sun.radius = 1.0 | units.RSun
-
-    earth = particles[1]
-    earth.mass = 5.9736e24 | units.kg
-    earth.radius = 6371.0 | units.km
-    earth.position = [0.0, 1.0, 0.0] | units.AU
-    earth.velocity = [2.0*np.pi, -0.0001, 0.0] | units.AU / units.yr
-
-    initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
-    final_direction = []
-    for log_eps2 in range(-9, 10, 2):
-        instance = make_bhtree(convert_nbody)
-        instance.initialize_code()
-        instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
-        instance.particles.add_particles(particles)
-        instance.commit_particles()
-        instance.evolve_model(0.25 | units.yr)
-        final_direction.append(math.atan((instance.particles[1].velocity[0] /
-            instance.particles[1].velocity[1])))
-
-    yield instance, initial_direction, final_direction
-
-
-@fixture
 def bhtree_to_test_energy(make_bhtree):
     np.random.seed(0)
     number_of_stars = 2
@@ -464,8 +424,12 @@ def test_test13(bhtree_kg, particle_fixture):
     expected = quantities.new_quantity(0.0, units.m)
     assert_equal_with_reltol(com[0], expected)
 
-def test_bhtree_parameters(bhtree_test14):
-    instance = bhtree_test14
+def test_bhtree_parameters(make_bhtree):
+
+    # Setup
+    convert_nbody = nbody_system.nbody_to_si(1.0 | units.yr, 1.0 | units.AU)
+    instance = make_bhtree(convert_nbody)
+    instance.commit_parameters()
 
     eps2 = instance.legacy_interface.get_epsilon_squared()
     assert isinstance(eps2, OrderedDictionary)
@@ -528,9 +492,36 @@ def test_bhtree_parameters(bhtree_test14):
         instance.parameters.dt_dia = x | units.yr
         assert_equal_with_reltol(instance.parameters.dt_dia, x | units.yr, in_units=units.yr)
 
-def test_effect_of_bhtree_param_epsilon_squared(bhtree_for_epsilon_squared_test):
-    instance, initial_direction, final_direction = bhtree_for_epsilon_squared_test
+def test_effect_of_bhtree_param_epsilon_squared(make_bhtree):
+    # Setup
+    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
 
+    particles = datamodel.Particles(2)
+    sun = particles[0]
+    sun.mass = 1.0 | units.MSun
+    sun.position = [0.0, 0.0, 0.0] | units.AU
+    sun.velocity = [0.0, 0.0, 0.0] | units.AU / units.yr
+    sun.radius = 1.0 | units.RSun
+
+    earth = particles[1]
+    earth.mass = 5.9736e24 | units.kg
+    earth.radius = 6371.0 | units.km
+    earth.position = [0.0, 1.0, 0.0] | units.AU
+    earth.velocity = [2.0*np.pi, -0.0001, 0.0] | units.AU / units.yr
+
+    initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
+    final_direction = []
+    for log_eps2 in range(-9, 10, 2):
+        instance = make_bhtree(convert_nbody)
+        instance.initialize_code()
+        instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
+        instance.particles.add_particles(particles)
+        instance.commit_particles()
+        instance.evolve_model(0.25 | units.yr)
+        final_direction.append(math.atan((instance.particles[1].velocity[0] /
+            instance.particles[1].velocity[1])))
+
+    # Tests
     # Small values of epsilon_squared should result in normal earth-sun dynamics: rotation of 90 degrees
     assert_equal_with_abstol(abs(final_direction[0]), abs(initial_direction + math.pi/2.0), 2)
 
