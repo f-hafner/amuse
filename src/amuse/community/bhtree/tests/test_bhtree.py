@@ -102,11 +102,8 @@ def particle_fixture(request):
     return particles
 
 
-# TODO: should this be available at the module level? -- then we'd need to clean the tree at the end of each test?
-# it is called 6x
 @fixture
 def bhtree(make_bhtree):
-    print("bhtree created")
     yield make_bhtree()
 
 
@@ -116,6 +113,15 @@ def bhtree_kg(make_bhtree): # for test4, test6, test7, test11, test12, test13
     instance = make_bhtree(convert_nbody)
     instance.commit_parameters()
     yield instance
+
+
+@pytest.fixture
+def bhtree_with_particles(bhtree, particle_fixture):
+    """Create and initialize a BHTree instance once for each particle fixture."""
+    bhtree.particles.add_particles(particle_fixture)
+    bhtree.commit_particles()
+    return bhtree
+
 
 
 def test_test1(make_bhtree):
@@ -309,40 +315,34 @@ def test_test9(bhtree, particle_fixture, x):
             assert_equal_with_reltol(gravity1[i], 0 | nbody_system.acceleration, 3)
 
 
-# TODO: what is this doing here? should this not move up? can we replace with with plain_bhtree fixture?
-@pytest.fixture
-def bhtree_instance(bhtree, particle_fixture):
-    """Create and initialize a BHTree instance once for each particle fixture."""
-    bhtree.particles.add_particles(particle_fixture)
-    bhtree.commit_particles()
-    return bhtree
-
 @pytest.mark.parametrize(
     "particle_fixture",
     [particle_inputs_test10],
     indirect=True
 )
 @pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
-@pytest.mark.parametrize("i", [0, 1, 2])  # Dimension index to modify
-@pytest.mark.parametrize("j", [0, 1, 2])  # Dimension index to check
-def test_gravity_at_positions(bhtree_instance, position, i, j):
+#@pytest.mark.parametrize("i", [0, 1, 2])  # Dimension index to modify
+#@pytest.mark.parametrize("j", [0, 1, 2])  # Dimension index to check
+def test_gravity_at_positions(bhtree_with_particles, position):
     """Test gravity at various positions along each dimension."""
     zero = 0.0 | nbody_system.length
     p0 = position | nbody_system.length
     p1 = -position | nbody_system.length
 
-    args0 = [zero] * 4
-    args1 = [zero] * 4
-    args0[1 + i] = p0
-    args1[1 + i] = p1
-    f0 = bhtree_instance.get_gravity_at_point(*args0)
-    f1 = bhtree_instance.get_gravity_at_point(*args1)
+    for i in range(3):
+        args0 = [zero] * 4
+        args1 = [zero] * 4
+        args0[1 + i] = p0
+        args1[1 + i] = p1
+        f0 = bhtree_with_particles.get_gravity_at_point(*args0)
+        f1 = bhtree_with_particles.get_gravity_at_point(*args1)
 
-    if j != i:
-        assert_equal_with_reltol(f0[j], 0.0 | nbody_system.acceleration, 3)
-        assert_equal_with_reltol(f1[j], 0.0 | nbody_system.acceleration, 3)
-    else:
-        assert_equal_with_reltol(f0[j], -1.0 * f1[j], 5)
+        for j in range(3):
+            if j != i:
+                assert_equal_with_reltol(f0[j], 0.0 | nbody_system.acceleration, 3)
+                assert_equal_with_reltol(f1[j], 0.0 | nbody_system.acceleration, 3)
+            else:
+                assert_equal_with_reltol(f0[j], -1.0 * f1[j], 5)
 
 
 
