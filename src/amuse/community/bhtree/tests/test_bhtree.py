@@ -80,11 +80,8 @@ particle_inputs_collision_detection = (
 def make_bhtree():
     created_bhtrees = []
 
-    def _make_bhtree(x=None, **kwargs):
-        if not x:
-            tree = BHTree(**kwargs)
-        else:
-            tree = BHTree(x, **kwargs)
+    def _make_bhtree(*args, **kwargs):
+        tree = BHTree(*args, **kwargs)
         created_bhtrees.append(tree)
         return tree
 
