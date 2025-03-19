@@ -176,30 +176,43 @@ def test_system_sun_earth(make_bhtree): # formerly test1
     assert_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 1)
 
 
-def test_new_particle(bhtree): #formerly test5
-    index = bhtree.new_particle(
-        15.0 | nbody_system.mass,
-        10.0 | nbody_system.length, 20.0 | nbody_system.length, 30.0 | nbody_system.length,
-        1.0 | nbody_system.speed, 1.0 | nbody_system.speed, 3.0 | nbody_system.speed,
-        10.0 | nbody_system.length
-    )
+particle_inputs_new_particle = [
+    15.0 | nbody_system.mass,
+    10.0 | nbody_system.length,
+    20.0 | nbody_system.length,
+    30.0 | nbody_system.length,
+    1.0 | nbody_system.speed,
+    1.0 | nbody_system.speed,
+    3.0 | nbody_system.speed,
+    10.0 | nbody_system.length
+    ]
+
+particle_inputs_new_particle_kg = [
+    15.0 | units.kg,
+    10.0 | units.m,
+    20.0 | units.m,
+    30.0 | units.m,
+    0.0 | units.m/units.s,
+    0.0 | units.m/units.s,
+    0.0 | units.m/units.s,
+    10.0 | units.m
+    ]
+# Note how bhtree and bhtree_kg fixtures are passed as strings
+    # and evaluated with request.getfixturevalue. See also:
+    # https://miguendes.me/how-to-use-fixtures-as-arguments-in-pytestmarkparametrize
+    # https://github.com/pytest-dev/pytest/issues/349
+@pytest.mark.parametrize(
+        ("bhtree_input", "particle_inputs"),
+        [("bhtree", particle_inputs_new_particle),
+         ("bhtree_kg", particle_inputs_new_particle_kg)]
+        )
+def test_new_particle(bhtree_input, particle_inputs, request): # combines test4 and test5
+    bhtree = request.getfixturevalue(bhtree_input)
+    index = bhtree.new_particle(*particle_inputs)
     bhtree.commit_particles()
-    assert_equal(bhtree.get_radius(index), 10.0 | nbody_system.length)
-    assert_equal(bhtree.get_mass(index), 15.0 | nbody_system.mass)
+    assert_equal(bhtree.get_mass(index), particle_inputs[0])
+    assert_equal(bhtree.get_radius(index), particle_inputs[1])
 
-
-def test_new_particle_kg(bhtree_kg): # formerly test4
-    bhtree = bhtree_kg
-
-    index = bhtree.new_particle(
-        15.0 | units.kg,
-        10.0 | units.m, 20.0 | units.m, 30.0 | units.m,
-        0.0 | units.m/units.s, 0.0 | units.m/units.s, 0.0 | units.m/units.s,
-        10.0 | units.m
-    )
-    bhtree.commit_particles()
-    assert_equal(bhtree.get_mass(index), 15.0 | units.kg, "new particle not added correctly")
-    assert_equal(bhtree.get_radius(index), 10.0 | units.m)
 
 
 def test_multiple_new_particles_index(bhtree_kg): # formerly test6
