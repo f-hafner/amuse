@@ -4,8 +4,6 @@ from pytest import approx
 from pytest import fixture
 from amuse.community.bhtree.interface import BHTreeInterface
 
-from amuse.support import literature
-literature.TrackLiteratureReferences.suppress_output()
 
 @fixture
 def interface():
