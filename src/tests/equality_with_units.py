@@ -1,9 +1,11 @@
 """Functions for using pytest with units."""
 from pytest import approx
+import numpy as np
 from amuse.units.quantities import none
 from amuse.units.quantities import to_quantity
 from amuse.units.quantities import is_quantity
-from amuse.units import constants
+
+PRECISION = int(round(np.log10(2.0/(np.finfo(np.double).eps))))-1
 
 def _check_comparable(x, y):
     if is_quantity(x):
@@ -35,7 +37,7 @@ def assert_equal_with_abstol(x, y, digits, msg=""):
     assert x_num == approx(y_num, abs=10**(-digits)), msg
 
 
-def assert_equal_with_reltol(x, y, digits=constants.precision, msg="", in_units=None):
+def assert_equal_with_reltol(x, y, digits=PRECISION, msg="", in_units=None):
     """Ported from failUnlessAlmostRelativeEqual."""
     _check_comparable(x, y)
     x_num, y_num = _convert_to_numeric(x, y, in_units=in_units)
