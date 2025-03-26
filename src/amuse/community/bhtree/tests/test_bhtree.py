@@ -155,25 +155,25 @@ def test_system_sun_earth(make_bhtree): # formerly test1
     bhtree.particles.add_particles(stars)
 
     # Tests
-    postion_at_start = earth.position.value_in(units.AU)[0]
+    position_at_start = earth.position.value_in(units.AU)[0]
 
     bhtree.evolve_model(365.0 | units.day)
     bhtree.particles.copy_values_of_all_attributes_to(stars)
 
-    postion_after_full_rotation = earth.position.value_in(units.AU)[0]
-    assert_equal_with_abstol(postion_at_start, postion_after_full_rotation, 3)
+    position_after_full_rotation = earth.position.value_in(units.AU)[0]
+    assert_equal_with_abstol(position_at_start, position_after_full_rotation, 3)
 
     bhtree.evolve_model(365.0 + (365.0 / 2) | units.day)
     bhtree.particles.copy_values_of_all_attributes_to(stars)
-    postion_after_half_a_rotation = earth.position.value_in(units.AU)[0]
+    position_after_half_a_rotation = earth.position.value_in(units.AU)[0]
 
-    assert_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 2)
+    assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 2)
 
     bhtree.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
     bhtree.particles.copy_values_of_all_attributes_to(stars)
-    postion_after_half_a_rotation = earth.position.value_in(units.AU)[1]
+    position_after_half_a_rotation = earth.position.value_in(units.AU)[1]
 
-    assert_equal_with_abstol(-postion_at_start, postion_after_half_a_rotation, 1)
+    assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 1)
 
 
 particle_inputs_new_particle = [
