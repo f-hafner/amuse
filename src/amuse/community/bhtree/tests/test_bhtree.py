@@ -23,6 +23,7 @@ from equality_with_units import assert_equal_with_reltol
 #from amuse.support import literature
 #literature.TrackLiteratureReferences.suppress_output()
 
+from amuse.support.testing.nbody_tests import *
 
 particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
           "radius": [10.0, 20.0] | units.m,
