@@ -98,14 +98,15 @@ def make_bhtree():
         tree.stop()
 
 
-@fixture
-def particle_fixture(request):
-    """Create particles from input arguments."""
-    num_particles, kwargs = request.param
-    particles = datamodel.Particles(num_particles)
-    for key, value in kwargs.items():
-        setattr(particles, key, value)
-    return particles
+# Uncommented: defined in src/amuse/support/testing/nbody/conftest.py
+#@fixture
+#def particle_fixture(request):
+#    """Create particles from input arguments."""
+#    num_particles, kwargs = request.param
+#    particles = datamodel.Particles(num_particles)
+#    for key, value in kwargs.items():
+#        setattr(particles, key, value)
+#    return particles
 
 
 @fixture
