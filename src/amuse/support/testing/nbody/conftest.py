@@ -13,6 +13,16 @@ literature.TrackLiteratureReferences.suppress_output()
 # Follows https://docs.pytest.org/en/stable/how-to/fixtures.html#factories-as-fixtures
 @fixture()
 def make_nbody_instance(nbody_implementation):
+    """Create instance of an implementation of an nbody code.
+
+    The function handles the teardown of the created object automatically.
+
+    Args:
+        nbody_implementation: Callable class that implements and nbody code.
+
+    Returns:
+        The created instance.
+    """
     created_instances = []
 
     def _make_instance(*args, **kwargs):
