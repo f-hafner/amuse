@@ -5,9 +5,10 @@ import numpy as np
 import time
 import math
 import pytest
+import logging
 
 from amuse.community.bhtree.interface import BHTree
-from amuse.support.exceptions import AmuseException
+from amuse.support.exceptions import AmuseException, CoreException
 from amuse.support.core import OrderedDictionary
 from amuse.units import nbody_system
 from amuse.units import units
@@ -19,6 +20,9 @@ from pytest import fixture
 from equality_with_units import assert_equal
 from equality_with_units import assert_equal_with_abstol
 from equality_with_units import assert_equal_with_reltol
+
+
+logger = logging.getLogger(__name__)
 
 particle_inputs_new_particle = [
     15.0 | nbody_system.mass,
@@ -46,7 +50,7 @@ particle_inputs_collision_detection = (
         7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
             "y": 0 | nbody_system.length,
             "z": 0 | nbody_system.length,
-            "mass": 0.001 | nbody_system.mass,
+            "mass": 0.001 | nbody_system.mass, # TODO: differs ph4 vs bhtree
             "radius": 0.01 | nbody_system.length,
             "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
           })
@@ -113,7 +117,11 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
     instance = make_nbody_instance(redirection="none")
     instance.initialize_code()
     instance.parameters.set_defaults()
-    instance.parameters.opening_angle = 0.1
+    try:
+        instance.parameters.opening_angle = 0.1
+    except CoreException: # necessary for ph4
+        logger.warning("Skipped setting opening_angle: no such parameter.")
+
     particles = particle_fixture
     instance.particles.add_particles(particles)
     collisions = instance.stopping_conditions.collision_detection
@@ -122,6 +130,7 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
 
     assert collisions.is_set(), "collisions not set"
     assert instance.model_time < 0.5 | nbody_system.time, "time too big"
+    # TODO: "PH4 can handle only one collision at a time", test_ph4.py, line 464
     assert len(collisions.particles(0)) == 3, "mismatch in N particles"
     assert len(collisions.particles(1)) == 3, "mismatch in N particles"
     assert len(particles - collisions.particles(0) - collisions.particles(1)) == 1

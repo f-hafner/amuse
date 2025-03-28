@@ -41,9 +41,10 @@ artifacts = ["ph4/ph4_worker"]
 
 [tool.pytest.ini_options]
 pythonpath = ["ph4/tests/", "../../../../../tests"]
-
 testpaths = ["ph4/tests",
              "../../../../support/testing/nbody/"]
-
 addopts = "-k 'not gpu'"
+log_cli = true
+log_cli_level = "WARNING"
+log_cli_format = "[%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 
