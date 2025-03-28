@@ -1,3 +1,4 @@
+from sys import exception
 import pytest
 
 import numpy as np
@@ -42,7 +43,7 @@ particle_inputs_new_particle_kg = [
     ]
 
 
-# Note how bhtree and bhtree_kg fixtures are passed as strings
+# Note how nbody_instance and nbody_instance_kg fixtures are passed as strings
     # and evaluated with request.getfixturevalue. See also:
     # https://miguendes.me/how-to-use-fixtures-as-arguments-in-pytestmarkparametrize
     # https://github.com/pytest-dev/pytest/issues/349
@@ -58,6 +59,40 @@ def test_new_particle_generic_version(nbody_input, particle_inputs, request): # 
     assert_equal(nbody_instance.get_mass(index), particle_inputs[0])
     assert_equal(nbody_instance.get_radius(index), particle_inputs[1])
 
+
+
+particle_inputs_gravity_with_same_potential = (
+        2, {"mass": [1.0, 1.0] | nbody_system.mass,
+            "radius": [0.0001, 0.0001] | nbody_system.length,
+            "position": [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length,
+            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
+          })
+
+particle_inputs_gravity_at_positions = (
+        6, {"mass": 1.0 | nbody_system.mass,
+            "radius": 0.0001 | nbody_system.length,
+            "position": [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 0.0, 1.0]] | nbody_system.length,
+            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
+          })
+
+# NOTE: 0.125 is the default value for epsilon_squared;
+# it is put here to make things explicit.
+@pytest.mark.parametrize(
+    ("particle_fixture", "point", "epsilon2"),
+    [(particle_inputs_gravity_with_same_potential, 1.0, 0.00001),
+     (particle_inputs_gravity_at_positions, 0.0, 0.125)],
+    indirect=["particle_fixture"]
+)
+def test_zero_gravity_generic_version(nbody_instance, particle_fixture, point, epsilon2):
+    """Test gravity at point where it is expected to be 0, depending on parameters."""
+    nbody_instance.parameters.epsilon_squared = epsilon2 | nbody_system.length**2
+    nbody_instance.particles.add_particles(particle_fixture)
+
+    zero = 0.0 | nbody_system.length
+    point = point | nbody_system.length
+    gravity = nbody_instance.get_gravity_at_point(zero, point, zero, zero)
+    for f in gravity:
+        assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
 
 

@@ -4,6 +4,7 @@ from amuse.units import nbody_system
 from amuse.units import units
 from amuse.units import quantities
 
+from amuse import datamodel
 
 from amuse.support import literature
 literature.TrackLiteratureReferences.suppress_output()
@@ -39,6 +40,14 @@ def nbody_instance_kg(make_nbody_instance): # for test4, test6, test7, test11, t
     yield instance
 
 
+@fixture
+def particle_fixture(request):
+    """Create particles from input arguments."""
+    num_particles, kwargs = request.param
+    particles = datamodel.Particles(num_particles)
+    for key, value in kwargs.items():
+        setattr(particles, key, value)
+    return particles
 
 
 
