@@ -42,6 +42,14 @@ particle_inputs_new_particle_kg = [
     10.0 | units.m
     ]
 
+particle_inputs_collision_detection = (
+        7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
+            "y": 0 | nbody_system.length,
+            "z": 0 | nbody_system.length,
+            "mass": 0.001 | nbody_system.mass,
+            "radius": 0.01 | nbody_system.length,
+            "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
+          })
 
 # Note how nbody_instance and nbody_instance_kg fixtures are passed as strings
     # and evaluated with request.getfixturevalue. See also:
@@ -94,6 +102,55 @@ def test_zero_gravity_generic_version(nbody_instance, particle_fixture, point, e
     for f in gravity:
         assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_collision_detection],
+    indirect=True
+)
+def test_collision_detection_generic_version(make_nbody_instance, particle_fixture): # formerly test17
+    instance = make_nbody_instance(redirection="none")
+    instance.initialize_code()
+    instance.parameters.set_defaults()
+    instance.parameters.opening_angle = 0.1
+    particles = particle_fixture
+    instance.particles.add_particles(particles)
+    collisions = instance.stopping_conditions.collision_detection
+    collisions.enable()
+    instance.evolve_model(1.0 | nbody_system.time)
+
+    assert collisions.is_set(), "collisions not set"
+    assert instance.model_time < 0.5 | nbody_system.time, "time too big"
+    assert len(collisions.particles(0)) == 3, "mismatch in N particles"
+    assert len(collisions.particles(1)) == 3, "mismatch in N particles"
+    assert len(particles - collisions.particles(0) - collisions.particles(1)) == 1
+
+    left = abs(collisions.particles(0).x - collisions.particles(1).x)
+    right = collisions.particles(0).radius + collisions.particles(1).radius
+    assert all(left < right) # TODO: useful error message?
+
+    sticky_merged = datamodel.Particles(len(collisions.particles(0)))
+    sticky_merged.mass = collisions.particles(0).mass + collisions.particles(1).mass
+    sticky_merged.radius = collisions.particles(0).radius
+    for p1, p2, merged in zip(collisions.particles(0), collisions.particles(1), sticky_merged):
+        merged.position = (p1 + p2).center_of_mass()
+        merged.velocity = (p1 + p2).center_of_mass_velocity()
+
+    instance.particles.remove_particles(collisions.particles(0) + collisions.particles(1))
+    instance.particles.add_particles(sticky_merged)
+
+    instance.evolve_model(1.0 | nbody_system.time)
+
+    assert collisions.is_set(), "collisions not set"
+    assert instance.model_time < 1.0 | nbody_system.time, "time too big"
+    assert len(collisions.particles(0)) == 1, "mismatch in N particles"
+    assert len(collisions.particles(1)) == 1, "mismatch in N particles"
+    assert len(instance.particles - collisions.particles(0) - collisions.particles(1)) == 2
+
+    left = abs(collisions.particles(0).x - collisions.particles(1).x)
+    right = collisions.particles(0).radius + collisions.particles(1).radius
+    assert all(left < right) # TODO: useful error message?
 
 
 
