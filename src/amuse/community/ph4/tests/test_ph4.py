@@ -20,7 +20,10 @@ from codes_tests.gd_tests import (
     _TestGravitationalDynamicsInterface,
 )
 
+## New
+from amuse.support.testing.nbody.nbody_tests import *
 
+## Old
 class TestPh4Interface(_TestGravitationalDynamicsInterface, TestWithMPI):
     def gravity_code_interface(self):
         return ph4Interface
