@@ -40,5 +40,6 @@ artifacts = ["bhtree/bhtree_worker"]
 [tool.pytest.ini_options]
 pythonpath = ["bhtree/tests/", "../../../../../tests"]
 
-testpaths = ["bhtree/tests"]
+testpaths = ["bhtree/tests",
+             "../../../../support/testing/nbody/"]
 
