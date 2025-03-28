@@ -213,8 +213,8 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
     assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 1)
 
 
-
-def test_total_energy_generic_version(make_nbody_instance):
+# taken from bhtree tests, test_total_energy
+def test_energy_unchanged_generic_version(make_nbody_instance):
     # Setup
     np.random.seed(0)
     number_of_stars = 2
@@ -246,3 +246,41 @@ def test_total_energy_generic_version(make_nbody_instance):
     energy_total_t1 = instance.potential_energy + instance.kinetic_energy
 
     assert_equal_with_reltol(energy_total_t0, energy_total_t1, 3)
+
+# TODO: rename the function
+@pytest.mark.parametrize("n_workers", [1, 4])
+def test_energy_changed_generic_version(make_nbody_instance, n_workers): #tests10a/b from ph4
+    # Setup
+    instance = make_nbody_instance(number_of_workers=n_workers)
+    instance.initialize_code()
+
+    instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
+    if hasattr(instance.parameters, "timestep_parameter"): # ph4
+        instance.parameters.timestep_parameter = 0.01
+    elif hasattr(instance.parameters, "timestep"): # bhtree
+        # original code (test16 in tests of bhtree) had 2 lines, one with
+        # 0.004 and one with 0.00001
+        instance.parameters.timestep = 0.00001 | nbody_system.time
+    else:
+        msg = "No parameter for timesteps found."
+        raise AttributeError(msg)
+    instance.commit_parameters()
+
+    number_of_stars = 100
+    stars = plummer.new_plummer_model(number_of_stars)
+    instance.particles.add_particles(stars)
+    channel = stars.new_channel_to(instance.particles)
+
+
+    # Test
+    instance.evolve_model(0.001 | nbody_system.time)
+    e0 = instance.kinetic_energy + instance.potential_energy
+    stars.mass *= 0.9
+    channel.copy()
+
+    instance.synchronize_model()
+    e1 = instance.kinetic_energy + instance.potential_energy
+
+    assert e1 != e0
+
+
