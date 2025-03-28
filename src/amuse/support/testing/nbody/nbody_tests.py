@@ -154,7 +154,7 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
 
 
 def test_system_sun_earth_generic_version(make_nbody_instance):
-    # Set up the tree
+    # Set up the instance
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
     instance = make_nbody_instance(convert_nbody)
     instance.parameters.epsilon_squared = 0.001 | units.AU**2
@@ -183,13 +183,19 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
     instance.particles.copy_values_of_all_attributes_to(stars)
 
     position_after_full_rotation = earth.position.value_in(units.AU)[0]
-    assert_equal_with_abstol(position_at_start, position_after_full_rotation, 3)
+    #assert_equal_with_abstol(position_at_start, position_after_full_rotation, 3)
+    # Replaced with
+    assert_equal_with_abstol(position_at_start, position_after_full_rotation, 2)
 
     instance.evolve_model(365.0 + (365.0 / 2) | units.day)
     instance.particles.copy_values_of_all_attributes_to(stars)
     position_after_half_a_rotation = earth.position.value_in(units.AU)[0]
 
-    assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 2)
+
+    position_delta = position_at_start + position_after_half_a_rotation
+    #assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 2)
+    # Replace with:
+    assert_equal_with_abstol(position_delta, 0.00, 2)
 
     instance.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
     instance.particles.copy_values_of_all_attributes_to(stars)
