@@ -1,3 +1,4 @@
+from dataclasses import make_dataclass
 from sys import exception
 import pytest
 
@@ -46,6 +47,18 @@ particle_inputs_new_particle_kg = [
     10.0 | units.m
     ]
 
+particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
+          "radius": [10.0, 20.0] | units.m,
+          "position": [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m,
+          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
+          })
+
+particle_inputs_center_of_mass_position = (2, {"mass": [30.0, 30.0] | units.kg,
+          "radius": [1.0, 1.0] | units.m,
+          "position": [[-10.0, 0.0, 0.0], [10.0, 0.0, 0.0]] | units.m,
+          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
+          })
+
 particle_inputs_collision_detection = (
         7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
             "y": 0 | nbody_system.length,
@@ -53,6 +66,27 @@ particle_inputs_collision_detection = (
             "mass": 0.001 | nbody_system.mass, # TODO: differs ph4 vs bhtree
             "radius": 0.01 | nbody_system.length,
             "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
+          })
+
+particle_inputs_stop_n_steps = (
+        2, {"x": [0.0, 10.0] | nbody_system.length,
+            "y": 0 | nbody_system.length,
+            "z": 0 | nbody_system.length,
+            "radius": 0.005 | nbody_system.length,
+            "vx": 0 | nbody_system.speed,
+            "vy": 0 | nbody_system.speed,
+            "vz": 0 | nbody_system.speed,
+            "mass": 1.0 | nbody_system.mass,
+          })
+
+particle_inputs_direction_and_speed_when_evolving_model = (
+        2, {"x": [0.0, 10.0] | nbody_system.length,
+            "y": 0.0 | nbody_system.length,
+            "z": 0.0 | nbody_system.length,
+            "vx": 1.0 | nbody_system.speed,
+            "vy": 0.0 | nbody_system.speed,
+            "vz": 0.0 | nbody_system.speed,
+            "mass": 0.1 | nbody_system.mass,
           })
 
 # Note how nbody_instance and nbody_instance_kg fixtures are passed as strings
@@ -70,6 +104,77 @@ def test_new_particle_generic_version(nbody_input, particle_inputs, request): # 
     nbody_instance.commit_particles()
     assert_equal(nbody_instance.get_mass(index), particle_inputs[0])
     assert_equal(nbody_instance.get_radius(index), particle_inputs[1])
+
+
+def test_multiple_new_particles_index_generic_version(nbody_instance_kg):
+    instance = nbody_instance_kg
+    indices = instance.new_particle(
+        [15.0, 30.0] | units.kg,
+        [10.0, 20.0] | units.m, [20.0, 40.0] | units.m, [30.0, 50.0] | units.m,
+        [0.0, 0.01] | units.m/units.s, [0.0, 0.01] | units.m/units.s, [0.0, 0.01] | units.m/units.s,
+        [10.0, 20.0] | units.m
+    )
+    instance.commit_particles()
+
+    assert_equal(instance.get_mass(indices[0]), 15.0 | units.kg)
+
+    with pytest.raises(AmuseException) as excinfo:
+        instance.get_mass([4, 5])
+
+    expected_typename = type(instance).__name__
+    expected_string = f"Error when calling 'get_mass' of a '{expected_typename}', errorcode is -1"
+    assert expected_string in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture, raw_particle_data",
+    [(particle_inputs_kg, particle_inputs_kg)],
+    indirect=["particle_fixture"]
+)
+def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test7
+    instance = nbody_instance_kg
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles()
+
+    expected_count = raw_particle_data[0]
+    assert len(instance.particles) == expected_count
+
+    expected_mass = raw_particle_data[1]["mass"]
+    for idx in range(expected_count):
+        assert_equal(instance.get_mass(idx+1), expected_mass[idx])
+
+    expected_radius = raw_particle_data[1]["radius"]
+    for idx in range(expected_count):
+        assert_equal(instance.get_radius(idx+1), expected_radius[idx])
+
+    expected_position = raw_particle_data[1]["position"]
+    for idx in range(expected_count):
+        pos = instance.get_position(idx+1)
+        pos_e = expected_position[idx]
+        for x, x_e in zip(pos, pos_e):
+            assert_equal_with_reltol(x, x_e)
+
+    expected_velocity = raw_particle_data[1]["velocity"]
+    for idx in range(expected_count):
+        vel = instance.get_velocity(idx+1)
+        vel_e = expected_velocity[idx]
+        for x, x_e in zip(vel, vel_e):
+            assert_equal_with_reltol(x, x_e)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_change_existing_particles_generic_version(nbody_instance_kg, particle_fixture): # formerly test8
+    instance = nbody_instance_kg
+
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles()
+
+    instance.particles.mass = [17.0, 33.0] | units.kg
+    assert_equal(instance.get_mass(1), 17.0 | units.kg)
 
 
 
@@ -106,6 +211,170 @@ def test_zero_gravity_generic_version(nbody_instance, particle_fixture, point, e
     for f in gravity:
         assert_equal_with_reltol(f, 0.0 | nbody_system.acceleration, 3)
 
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_gravity_with_same_potential],
+    indirect=True
+)
+@pytest.mark.parametrize("x", [0.25, 0.5, 0.75])
+def test_gravity_with_same_potential_generic_version(nbody_instance, particle_fixture, x): # formerly test9
+    instance = nbody_instance
+    instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
+    instance.particles.add_particles(particle_fixture)
+
+    zero = 0.0 | nbody_system.length
+
+    x0 = x | nbody_system.length
+    x1 = (2.0 - x) | nbody_system.length
+    potential0 = instance.get_potential_at_point(zero, x0, zero, zero)
+    potential1 = instance.get_potential_at_point(zero, x1, zero, zero)
+    assert_equal_with_reltol(potential0, potential1, 5)
+
+    gravity0 = instance.get_gravity_at_point(zero, x0, zero, zero)
+    gravity1 = instance.get_gravity_at_point(zero, x1, zero, zero)
+    for i in range(len(gravity0)):
+        if i == 0:
+            fx0_expected = (-1.0 / (x0**2) + 1.0 / (x1**2)) * (1.0 | nbody_system.length ** 3 / nbody_system.time ** 2)
+            assert_equal_with_reltol(gravity0[i], fx0_expected, 2)
+            assert_equal_with_reltol(gravity0[i], -1.0 * gravity1[i], 5)
+            pass
+        else:
+            assert_equal_with_reltol(gravity0[i], 0 | nbody_system.acceleration, 3)
+            assert_equal_with_reltol(gravity1[i], 0 | nbody_system.acceleration, 3)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_gravity_at_positions],
+    indirect=True
+)
+@pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
+def test_gravity_at_positions_generic_version(nbody_instance_with_particles, position): # formerly test10
+    """Test gravity at various positions along each dimension."""
+    instance = nbody_instance_with_particles
+    zero = 0.0 | nbody_system.length
+    p0 = position | nbody_system.length
+    p1 = -position | nbody_system.length
+
+    for i in range(3):
+        args0 = [zero] * 4
+        args1 = [zero] * 4
+        args0[1 + i] = p0
+        args1[1 + i] = p1
+        gravity0 = instance.get_gravity_at_point(*args0)
+        gravity1 = instance.get_gravity_at_point(*args1)
+
+        for j in range(3):
+            if j != i:
+                assert_equal_with_reltol(gravity0[j], 0.0 | nbody_system.acceleration, 3)
+                assert_equal_with_reltol(gravity1[j], 0.0 | nbody_system.acceleration, 3)
+            else:
+                assert_equal_with_reltol(gravity0[j], -1.0 * gravity1[j], 5)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture, raw_particle_data",
+    [(particle_inputs_kg, particle_inputs_kg)],
+    indirect=["particle_fixture"]
+    ) # TODO: fails on ph4
+def test_copy_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test11
+    instance = nbody_instance_kg
+    instance.particles.add_particles(particle_fixture)
+
+    copyof = instance.particles.copy()
+    id_to_check = 1
+    expected_mass = raw_particle_data[1]["mass"][id_to_check]
+    assert_equal_with_reltol(copyof[id_to_check].mass, expected_mass, 6)
+
+    copyof[1].mass = 35 | units.kg
+    copyof.copy_values_of_all_attributes_to(instance.particles)
+
+    assert_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_kg],
+    indirect=True
+)
+def test_set_state_generic_version(nbody_instance_kg, particle_fixture): # formerly test12
+    instance = nbody_instance_kg
+
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles()
+
+    state_values = [16 | units.kg,
+             20.0 | units.m,
+             40.0 | units.m,
+             60.0 | units.m,
+             1.0 | units.ms,
+             1.0 | units.ms,
+             1.0 | units.ms]
+    instance.set_state(1, *state_values)
+    expected_values = state_values + [0 | units.m]
+
+    curr_state = instance.get_state(1)
+    for expected, actual in zip(expected_values, curr_state):
+        assert_equal_with_reltol(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_center_of_mass_position],
+    indirect=True
+)
+def test_center_of_mass_position_generic_version(nbody_instance_kg, particle_fixture): # formerly test13
+    instance = nbody_instance_kg
+
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles()
+
+    com = instance.center_of_mass_position
+    expected = quantities.new_quantity(0.0, units.m)
+    assert_equal_with_reltol(com[0], expected)
+
+# TODO: fails on ph4
+def test_effect_of_param_epsilon_squared_generic_version(make_nbody_instance):
+    # Setup
+    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
+
+    particles = datamodel.Particles(2)
+    sun = particles[0]
+    sun.mass = 1.0 | units.MSun
+    sun.position = [0.0, 0.0, 0.0] | units.AU
+    sun.velocity = [0.0, 0.0, 0.0] | units.AU / units.yr
+    sun.radius = 1.0 | units.RSun
+
+    earth = particles[1]
+    earth.mass = 5.9736e24 | units.kg
+    earth.radius = 6371.0 | units.km
+    earth.position = [0.0, 1.0, 0.0] | units.AU
+    earth.velocity = [2.0*np.pi, -0.0001, 0.0] | units.AU / units.yr
+
+    initial_direction = math.atan((earth.velocity[0]/earth.velocity[1]))
+    final_direction = []
+    for log_eps2 in range(-9, 10, 2):
+        instance = make_nbody_instance(convert_nbody)
+        instance.initialize_code()
+        instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
+        instance.particles.add_particles(particles)
+        instance.commit_particles()
+        instance.evolve_model(0.25 | units.yr)
+        final_direction.append(math.atan((instance.particles[1].velocity[0] /
+            instance.particles[1].velocity[1])))
+
+    # Tests
+    # Small values of epsilon_squared should result in normal earth-sun dynamics: rotation of 90 degrees
+    assert_equal_with_abstol(abs(final_direction[0]), abs(initial_direction + math.pi/2.0), 2)
+
+    # Large values of epsilon_squared should result in ~ no interaction
+    assert_equal_with_abstol(final_direction[-1], initial_direction, 2)
+
+    # Outcome is most sensitive to epsilon_squared when epsilon_squared = d(earth, sun)^2
+    delta = [abs(final_direction[i+1]-final_direction[i]) for i in range(len(final_direction)-1)]
+    assert max(delta) == delta[len(final_direction)//2 - 1]
 
 
 @pytest.mark.parametrize(
@@ -160,6 +429,101 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
     left = abs(collisions.particles(0).x - collisions.particles(1).x)
     right = collisions.particles(0).radius + collisions.particles(1).radius
     assert all(left < right) # TODO: useful error message?
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_stop_n_steps],
+    indirect=True
+)
+def test_cleanup_generic_version(nbody_instance, particle_fixture): # formerly test20
+    instance = nbody_instance
+    instance.particles.add_particles(particle_fixture)
+
+    very_short_time_to_evolve = 1 | units.s
+
+    instance.parameters.stopping_conditions_timeout = very_short_time_to_evolve
+    assert instance.parameters.stopping_conditions_timeout == very_short_time_to_evolve
+
+    codeparticles1 = instance.particles
+    instance.particles.add_particle(datamodel.Particle(
+        position=[0, 1, 2] | nbody_system.length,
+        velocity=[0, 0, 0] | nbody_system.speed,
+        radius=0.005 | nbody_system.length,
+        mass=1 | nbody_system.mass
+    ))
+    codeparticles2 = instance.particles
+    assert codeparticles2 is codeparticles1
+    instance.cleanup_code()
+    codeparticles3 = instance.particles
+    assert codeparticles1 is not codeparticles3, "clean up does not work"
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_stop_n_steps],
+    indirect=True
+)
+def test_potential_energy_generic_version(nbody_instance, particle_fixture): # formerly test21
+    instance = nbody_instance
+    instance.particles.add_particles(particle_fixture)
+
+    instance.parameters.epsilon_squared = (1e-5 | nbody_system.length)**2
+    assert_equal_with_reltol(instance.potential_energy, -0.1 | nbody_system.energy, 5)
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_stop_n_steps],
+    indirect=True
+)
+def test_add_particle_with_new_radius_generic_version(nbody_instance, particle_fixture): # formerly test22
+    instance = nbody_instance
+    instance.particles.add_particles(particle_fixture)
+
+    instance.commit_particles()
+    p = datamodel.Particle(
+        x=1.0 | nbody_system.length,
+        y=2.0 | nbody_system.length,
+        z=3.0 | nbody_system.length,
+        vx=1.0 | nbody_system.speed,
+        vy=2.0 | nbody_system.speed,
+        vz=3.0 | nbody_system.speed,
+        mass=1.0 | nbody_system.mass,
+        radius=4.0 | nbody_system.length,
+    )
+    instance.particles.add_particle(p)
+
+    radii = [x.radius for x in instance.particles]
+    expected = [x | nbody_system.length for x in [0.005, 0.005, 4.0]]
+    assert all(x == y for x,y in zip(radii, expected)), \
+            "cannot add new particle with different radius"
+
+
+
+@pytest.mark.parametrize(
+    "particle_fixture",
+    [particle_inputs_direction_and_speed_when_evolving_model],
+    indirect=True
+    ) # TODO: fails on ph4
+def test_direction_and_speed_when_evolving_model_generic_version(make_nbody_instance, particle_fixture): # formerly test23
+    instance = make_nbody_instance(redirection="none")
+    particles = particle_fixture
+    instance.particles.add_particles(particles)
+    instance.commit_particles()
+
+    instance.evolve_model(0.1 | nbody_system.time)
+    assert instance.particles[0].vy <= 0 | nbody_system.speed
+
+    assert_equal_with_reltol(instance.particles[0].x, 0.1 | nbody_system.length, 4)
+
+    instance.particles.new_channel_to(particles).copy()
+    particles.vy = 1 | nbody_system.speed
+    particles.new_channel_to(instance.particles).copy()
+
+    instance.evolve_model(0.2 | nbody_system.time)
+
+    assert instance.particles[0].vy > 0 | nbody_system.speed
+    assert_equal_with_reltol(instance.particles[0].y, 0.1 | nbody_system.length, 4)
 
 
 def test_system_sun_earth_generic_version(make_nbody_instance):

@@ -51,6 +51,15 @@ def nbody_instance_kg(make_nbody_instance): # for test4, test6, test7, test11, t
     yield instance
 
 
+@fixture()
+def nbody_instance_with_particles(nbody_instance, particle_fixture):
+    """Create and initialize an nbody instance once for each particle fixture."""
+    nbody_instance.particles.add_particles(particle_fixture)
+    nbody_instance.commit_particles()
+    return nbody_instance
+
+
+
 @fixture
 def particle_fixture(request):
     """Create particles from input arguments."""
