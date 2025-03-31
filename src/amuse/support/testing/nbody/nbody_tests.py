@@ -25,6 +25,20 @@ from equality_with_units import assert_equal_with_reltol
 
 logger = logging.getLogger(__name__)
 
+def _set_timestep_parameters(instance):
+    """Helper to set timestep params for bhtree and ph4. Values taken from existing code."""
+    if hasattr(instance.parameters, "timestep_parameter"): # ph4
+        instance.parameters.timestep_parameter = 0.01
+    elif hasattr(instance.parameters, "timestep"): # bhtree
+        # original code (test16 in tests of bhtree) had 2 lines, one with
+        # 0.004 and one with 0.00001
+        instance.parameters.timestep = 0.00001 | nbody_system.time
+    else:
+        msg = "No parameter for timesteps found."
+        raise AttributeError(msg)
+    return instance
+
+
 particle_inputs_new_particle = [
     15.0 | nbody_system.mass,
     10.0 | nbody_system.length,
@@ -589,15 +603,7 @@ def test_energy_unchanged_generic_version(make_nbody_instance):
     instance = make_nbody_instance()
     instance.initialize_code()
     instance.parameters.epsilon_squared = (1.0 / 20.0 / (number_of_stars**0.33333) | nbody_system.length)**2
-    if hasattr(instance.parameters, "timestep_parameter"): # ph4
-        instance.parameters.timestep_parameter = 0.01
-    elif hasattr(instance.parameters, "timestep"): # bhtree
-        # original code (test16 in tests of bhtree) had 2 lines, one with
-        # 0.004 and one with 0.00001
-        instance.parameters.timestep = 0.00001 | nbody_system.time
-    else:
-        msg = "No parameter for timesteps found."
-        raise AttributeError(msg)
+    instance = _set_timestep_parameters(instance)
 
     instance.commit_parameters()
     instance.particles.add_particles(stars)
@@ -647,4 +653,64 @@ def test_energy_changed_generic_version(make_nbody_instance, n_workers): #tests1
 
     assert e1 != e0
 
+
+def test_states(nbody_instance, make_nbody_instance): # formerly test16 in ph4
+    stars = plummer.new_plummer_model(100)
+    black_hole = datamodel.Particle()
+    black_hole.mass = 1.0 | nbody_system.mass
+    black_hole.radius = 0.0 | nbody_system.length
+    black_hole.position = [0.0, 0.0, 0.0] | nbody_system.length
+    black_hole.velocity = [0.0, 0.0, 0.0] | nbody_system.speed
+
+    instance = nbody_instance
+    assert instance.get_name_of_current_state() == "UNINITIALIZED"
+    instance.initialize_code()
+    assert instance.get_name_of_current_state() == "INITIALIZED"
+    instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
+    instance = _set_timestep_parameters(instance)
+
+    instance.commit_parameters()
+    assert instance.get_name_of_current_state() == "EDIT"
+    instance.particles.add_particles(stars)
+    instance.commit_particles()
+    assert instance.get_name_of_current_state() == "RUN"
+    instance.particles.remove_particle(stars[0])
+    instance.particles.add_particle(black_hole)
+    assert instance.get_name_of_current_state() == "UPDATE"
+    instance.recommit_particles()
+    assert instance.get_name_of_current_state() == "RUN"
+    instance.evolve_model(0.001 | nbody_system.time)
+    assert instance.get_name_of_current_state() == "EVOLVED"
+    instance.synchronize_model()
+    assert instance.get_name_of_current_state() == "RUN"
+
+    # this is not possible to test with our fixtures
+    #instance.cleanup_code()
+    #assert instance.get_name_of_current_state() == "END"
+    #self.assertEqual(instance.get_name_of_current_state(), 'END')
+    #instance.stop()
+
+    instance = make_nbody_instance()
+    assert instance.get_name_of_current_state() == "UNINITIALIZED"
+    instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
+    instance = _set_timestep_parameters(instance)
+
+    assert instance.get_name_of_current_state() == "INITIALIZED"
+    instance.particles.add_particles(stars)
+    assert instance.get_name_of_current_state() == "EDIT"
+    _ = instance.particles[0].mass
+    assert instance.get_name_of_current_state() == "RUN"
+    instance.particles.remove_particle(stars[0])
+    instance.particles.add_particle(black_hole)
+    assert instance.get_name_of_current_state() == "UPDATE"
+    _ = instance.particles[0].mass
+    assert instance.get_name_of_current_state() == "RUN"
+    instance.evolve_model(0.001 | nbody_system.time)
+    assert instance.get_name_of_current_state() == "EVOLVED"
+    _ = instance.particles[0].mass
+    assert instance.get_name_of_current_state() == "RUN"
+
+    # Not possible with our fixtures
+    #instance.stop()
+    #self.assertEqual(instance.get_name_of_current_state(), 'STOPPED')
 
