@@ -26,17 +26,16 @@ from .fixtures import *
 
 logger = logging.getLogger(__name__)
 
-def _set_timestep_parameters(instance):
+def _set_timestep_parameters(instance, timestep_param: tuple):
     """Helper to set timestep params for bhtree and ph4. Values taken from existing code."""
-    if hasattr(instance.parameters, "timestep_parameter"): # ph4
-        instance.parameters.timestep_parameter = 0.01
-    elif hasattr(instance.parameters, "timestep"): # bhtree
-        # original code (test16 in tests of bhtree) had 2 lines, one with
-        # 0.004 and one with 0.00001
-        instance.parameters.timestep = 0.00001 | nbody_system.time
-    else:
-        msg = "No parameter for timesteps found."
-        raise AttributeError(msg)
+    try:
+        name, value = timestep_param
+        setattr(instance.parameters, name, value)
+    except AttributeError as err:
+        msg = """No valid parameters for timesteps provided.
+                Have you correctly defined an `nbody_timestep_parameter`
+                in your package's `conftest.py`?"""
+        raise AttributeError(msg) from err
     return instance
 
 
@@ -593,7 +592,7 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
 
 
 # taken from bhtree tests, test_total_energy
-def test_energy_unchanged_generic_version(make_nbody_instance):
+def test_energy_unchanged_generic_version(make_nbody_instance, nbody_timestep_parameter):
     # Setup
     np.random.seed(0)
     number_of_stars = 2
@@ -604,7 +603,7 @@ def test_energy_unchanged_generic_version(make_nbody_instance):
     instance = make_nbody_instance()
     instance.initialize_code()
     instance.parameters.epsilon_squared = (1.0 / 20.0 / (number_of_stars**0.33333) | nbody_system.length)**2
-    instance = _set_timestep_parameters(instance)
+    instance = _set_timestep_parameters(instance, nbody_timestep_parameter)
 
     instance.commit_parameters()
     instance.particles.add_particles(stars)
@@ -655,7 +654,7 @@ def test_energy_changed_generic_version(make_nbody_instance, n_workers): #tests1
     assert e1 != e0
 
 
-def test_states(nbody_instance, make_nbody_instance): # formerly test16 in ph4
+def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter): # formerly test16 in ph4
     stars = plummer.new_plummer_model(100)
     black_hole = datamodel.Particle()
     black_hole.mass = 1.0 | nbody_system.mass
@@ -668,7 +667,7 @@ def test_states(nbody_instance, make_nbody_instance): # formerly test16 in ph4
     instance.initialize_code()
     assert instance.get_name_of_current_state() == "INITIALIZED"
     instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
-    instance = _set_timestep_parameters(instance)
+    instance = _set_timestep_parameters(instance, nbody_timestep_parameter)
 
     instance.commit_parameters()
     assert instance.get_name_of_current_state() == "EDIT"
@@ -694,7 +693,7 @@ def test_states(nbody_instance, make_nbody_instance): # formerly test16 in ph4
     instance = make_nbody_instance()
     assert instance.get_name_of_current_state() == "UNINITIALIZED"
     instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
-    instance = _set_timestep_parameters(instance)
+    instance = _set_timestep_parameters(instance, nbody_timestep_parameter)
 
     assert instance.get_name_of_current_state() == "INITIALIZED"
     instance.particles.add_particles(stars)

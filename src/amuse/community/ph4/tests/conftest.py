@@ -10,8 +10,9 @@ from amuse.units import quantities
 def nbody_implementation():
     return ph4
 
-
-
+@fixture()
+def nbody_timestep_parameter():
+    return ("timestep_parameter", 0.01)
 
 
 
