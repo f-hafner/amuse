@@ -22,6 +22,7 @@ from equality_with_units import assert_equal
 from equality_with_units import assert_equal_with_abstol
 from equality_with_units import assert_equal_with_reltol
 
+from .fixtures import *
 
 logger = logging.getLogger(__name__)
 
@@ -714,3 +715,50 @@ def test_states(nbody_instance, make_nbody_instance): # formerly test16 in ph4
     #instance.stop()
     #self.assertEqual(instance.get_name_of_current_state(), 'STOPPED')
 
+def test_potential_with_multiple_workers(make_nbody_instance): # test21 in ph4
+    particles = plummer.new_plummer_model(200)
+    particles.scale_to_standard()
+    instance = make_nbody_instance()
+    instance.initialize_code()
+    instance.parameters.epsilon_squared = 0.00000 | nbody_system.length**2
+    instance.particles.add_particles(particles)
+
+    x = np.arange(-1, 1, 0.1) | nbody_system.length
+    zero = np.zeros(len(x)) | nbody_system.length
+    potential0 = instance.get_potential_at_point(zero, x, zero, zero)
+    for n in (2, 3, 4):
+        temp_instance = make_nbody_instance(number_of_workers=n)
+        temp_instance.initialize_code()
+        temp_instance.parameters.epsilon_squared = 0.00000 | nbody_system.length**2
+        temp_instance.particles.add_particles(particles)
+        potential = temp_instance.get_potential_at_point(zero, x, zero, zero)
+
+        assert_equal_with_reltol(potential0, potential, 8)
+
+def test_new_test(nbody_instance): # test23 in ph4
+
+    particles = datamodel.Particles(
+        mass=[1, 2] | nbody_system.mass,
+        x=[-1, 1] | nbody_system.length,
+        y=[-1, 1] | nbody_system.length,
+        z=[-1, 1] | nbody_system.length,
+        vx=[-1, 1] | nbody_system.speed,
+        vy=[-1, 1] | nbody_system.speed,
+        vz=[-1, 1] | nbody_system.speed
+    )
+
+    instance = nbody_instance
+
+    overlay = datamodel.ParticlesOverlay(instance.particles)
+
+    overlay.add_particles(particles)
+    all_attributes = overlay.get_values_in_store(overlay.get_all_indices_in_store(), ['mass', 'x', 'y', 'z', 'vx', 'vy', 'vz'])
+
+    assert_equal(all_attributes[0], [1, 2] | nbody_system.mass)
+    # TODO: generalize the comparison to arrays!
+
+
+    #self.assertEqual(all_attributes[0], [1, 2] | nbody_system.mass)
+    self.assertEqual(instance.particles.mass, [1, 2] | nbody_system.mass)
+    self.assertEqual(overlay.mass, [1, 2] | nbody_system.mass)
+    self.assertEqual(overlay.position, [[-1., -1., -1.], [1.,  1.,  1.]] | nbody_system.length)
