@@ -35,7 +35,7 @@ class Parameters(object):
         # if name.startswith('__'):
         #    return object.__getattribute__(self, name)
         if not name in self._mapping_from_name_to_definition:
-            raise exceptions.coreexception(
+            raise exceptions.CoreException(
                 f"tried to get unknown parameter '{name}' "
                 f"for a '{type(self._instance()).__name__}' object"
             )
