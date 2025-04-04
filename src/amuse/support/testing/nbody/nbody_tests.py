@@ -349,8 +349,8 @@ def test_center_of_mass_position_generic_version(nbody_instance_kg, particle_fix
     expected = quantities.new_quantity(0.0, units.m)
     assert_equal_with_reltol(com[0], expected)
 
-# TODO: fails on ph4
-def test_effect_of_param_epsilon_squared_generic_version(make_nbody_instance):
+# test_effect_of_param_epsilon_squared in bhtree tests
+def test_softening_generic_version(make_nbody_instance, nbody_timestep_parameter):
     # Setup
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
 
@@ -372,6 +372,7 @@ def test_effect_of_param_epsilon_squared_generic_version(make_nbody_instance):
     for log_eps2 in range(-9, 10, 2):
         instance = make_nbody_instance(convert_nbody)
         instance.initialize_code()
+        _set_timestep_parameters(instance, nbody_timestep_parameter)
         instance.parameters.epsilon_squared = 10.0**log_eps2 | units.AU ** 2
         instance.particles.add_particles(particles)
         instance.commit_particles()
