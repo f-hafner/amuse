@@ -727,7 +727,7 @@ def test_potential_with_multiple_workers(make_nbody_instance): # test21 in ph4
 
         assert_equal_with_reltol(potential0, potential, 8)
 
-def test_new_test(nbody_instance): # test23 in ph4
+def test_particles_overlay(nbody_instance): # test23 in ph4
 
     particles = datamodel.Particles(
         mass=[1, 2] | nbody_system.mass,
@@ -746,11 +746,10 @@ def test_new_test(nbody_instance): # test23 in ph4
     overlay.add_particles(particles)
     all_attributes = overlay.get_values_in_store(overlay.get_all_indices_in_store(), ['mass', 'x', 'y', 'z', 'vx', 'vy', 'vz'])
 
-    assert_equal(all_attributes[0], [1, 2] | nbody_system.mass)
-    # TODO: generalize the comparison to arrays!
+    expected_mass = [1, 2] | nbody_system.mass
+    assert_equal(all_attributes[0], expected_mass)
+    assert_equal(instance.particles.mass, expected_mass)
+    assert_equal(overlay.mass, expected_mass)
+    expected_position = [[-1., -1., -1.], [1.,  1.,  1.]] | nbody_system.length
+    assert_equal(overlay.position, expected_position)
 
-
-    #self.assertEqual(all_attributes[0], [1, 2] | nbody_system.mass)
-    self.assertEqual(instance.particles.mass, [1, 2] | nbody_system.mass)
-    self.assertEqual(overlay.mass, [1, 2] | nbody_system.mass)
-    self.assertEqual(overlay.position, [[-1., -1., -1.], [1.,  1.,  1.]] | nbody_system.length)
