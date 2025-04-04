@@ -619,21 +619,14 @@ def test_energy_unchanged_generic_version(make_nbody_instance, nbody_timestep_pa
 
 # TODO: rename the function
 @pytest.mark.parametrize("n_workers", [1, 4])
-def test_energy_changed_generic_version(make_nbody_instance, n_workers): #tests10a/b from ph4
+def test_energy_changed_generic_version(make_nbody_instance, n_workers, nbody_timestep_parameter): #tests10a/b from ph4
     # Setup
     instance = make_nbody_instance(number_of_workers=n_workers)
     instance.initialize_code()
 
     instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
-    if hasattr(instance.parameters, "timestep_parameter"): # ph4
-        instance.parameters.timestep_parameter = 0.01
-    elif hasattr(instance.parameters, "timestep"): # bhtree
-        # original code (test16 in tests of bhtree) had 2 lines, one with
-        # 0.004 and one with 0.00001
-        instance.parameters.timestep = 0.00001 | nbody_system.time
-    else:
-        msg = "No parameter for timesteps found."
-        raise AttributeError(msg)
+    instance = _set_timestep_parameters(instance, nbody_timestep_parameter)
+
     instance.commit_parameters()
 
     number_of_stars = 100
