@@ -292,8 +292,8 @@ def test_gravity_at_positions_generic_version(nbody_instance_with_particles, pos
     "particle_fixture, raw_particle_data",
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
-    ) # TODO: fails on ph4
-def test_copy_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test11
+    )
+def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test11
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
 
@@ -303,8 +303,8 @@ def test_copy_particles_generic_version(nbody_instance_kg, particle_fixture, raw
     assert_equal_with_reltol(copyof[id_to_check].mass, expected_mass, 6)
 
     copyof[1].mass = 35 | units.kg
-    copyof.copy_values_of_all_attributes_to(instance.particles)
-
+    channel = copyof.new_channel_to(instance.particles)
+    channel.copy_attributes(["mass"])
     assert_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
 
 
