@@ -410,28 +410,37 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
     instance.particles.add_particles(particles)
     collisions = instance.stopping_conditions.collision_detection
     collisions.enable()
-    instance.evolve_model(1.0 | nbody_system.time)
+    n_particles_start = len(instance.particles)
 
-    assert collisions.is_set(), "collisions not set"
-    assert instance.model_time < 0.5 | nbody_system.time, "time too big"
-    # TODO: "PH4 can handle only one collision at a time", test_ph4.py, line 464
-    assert len(collisions.particles(0)) == 3, "mismatch in N particles"
-    assert len(collisions.particles(1)) == 3, "mismatch in N particles"
-    assert len(particles - collisions.particles(0) - collisions.particles(1)) == 1
+    max_collisions = 3
+    n_collisions = 0
+    for _ in range(3):
+        instance.evolve_model(1.0 | nbody_system.time)
 
-    left = abs(collisions.particles(0).x - collisions.particles(1).x)
-    right = collisions.particles(0).radius + collisions.particles(1).radius
-    assert all(left < right) # TODO: useful error message?
+        assert collisions.is_set(), "collisions not set"
+        assert instance.model_time < 0.5 | nbody_system.time, "time too big"
 
-    sticky_merged = datamodel.Particles(len(collisions.particles(0)))
-    sticky_merged.mass = collisions.particles(0).mass + collisions.particles(1).mass
-    sticky_merged.radius = collisions.particles(0).radius
-    for p1, p2, merged in zip(collisions.particles(0), collisions.particles(1), sticky_merged):
-        merged.position = (p1 + p2).center_of_mass()
-        merged.velocity = (p1 + p2).center_of_mass_velocity()
+        n_current_collisions = len(collisions.particles(0))
+        assert len(collisions.particles(1)) == n_current_collisions, "mismatch in N particles"
+        assert len(instance.particles - collisions.particles(0) - collisions.particles(1)) == n_particles_start - 2*n_current_collisions - n_collisions
 
-    instance.particles.remove_particles(collisions.particles(0) + collisions.particles(1))
-    instance.particles.add_particles(sticky_merged)
+        left = abs(collisions.particles(0).x - collisions.particles(1).x)
+        right = collisions.particles(0).radius + collisions.particles(1).radius
+        assert all(left < right) # TODO: useful error message?
+
+        sticky_merged = datamodel.Particles(len(collisions.particles(0)))
+        sticky_merged.mass = collisions.particles(0).mass + collisions.particles(1).mass
+        sticky_merged.radius = collisions.particles(0).radius
+        for p1, p2, merged in zip(collisions.particles(0), collisions.particles(1), sticky_merged):
+            merged.position = (p1 + p2).center_of_mass()
+            merged.velocity = (p1 + p2).center_of_mass_velocity()
+
+        instance.particles.remove_particles(collisions.particles(0) + collisions.particles(1))
+        instance.particles.add_particles(sticky_merged)
+
+        n_collisions += n_current_collisions
+        if n_collisions >= max_collisions: # break in first iteration for bhtree
+            break
 
     instance.evolve_model(1.0 | nbody_system.time)
 
