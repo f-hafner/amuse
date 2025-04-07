@@ -21,6 +21,9 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
+## Import generic nbody tests
+from amuse.support.testing.nbody.nbody_tests import *
+
 
 class TestHermiteInterface(_TestGravitationalDynamicsInterface, TestWithMPI):
     def gravity_code_interface(self):
