@@ -14,5 +14,9 @@ def nbody_implementation():
 def nbody_timestep_parameter():
     return ("timestep_parameter", 0.01)
 
+@fixture()
+def starting_particle_index():
+    """Return the starting index for particles in the ph4 code (1-based)."""
+    return 1
 
 

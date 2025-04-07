@@ -1,3 +1,12 @@
+"""Fixtures for generic nbody tests.
+
+They are **imported** by nbody_test.py.
+
+NOTE: This means that any fixtures defined here take precedence over fixtures
+in code-specific conftest.py. files. This behavior *differs* from pytest
+behavior, where the fixture that is first discovered (in our case, the fixture
+defined in the specific code) is used.
+"""
 
 from pytest import fixture
 from amuse.units import nbody_system

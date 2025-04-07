@@ -14,3 +14,8 @@ def nbody_implementation():
 def nbody_timestep_parameter():
     return ("timestep", 0.00001 | nbody_system.time)
 
+@fixture()
+def starting_particle_index():
+    """Return the starting index for particles in the BHTree code (1-based)."""
+    return 1
+

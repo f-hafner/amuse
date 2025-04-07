@@ -145,7 +145,7 @@ def test_multiple_new_particles_index_generic_version(nbody_instance_kg):
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
 )
-def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test7
+def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index): # formerly test7
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
@@ -155,22 +155,22 @@ def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixt
 
     expected_mass = raw_particle_data[1]["mass"]
     for idx in range(expected_count):
-        assert_equal(instance.get_mass(idx+1), expected_mass[idx])
+        assert_equal(instance.get_mass(starting_particle_index + idx), expected_mass[idx])
 
     expected_radius = raw_particle_data[1]["radius"]
     for idx in range(expected_count):
-        assert_equal(instance.get_radius(idx+1), expected_radius[idx])
+        assert_equal(instance.get_radius(starting_particle_index + idx), expected_radius[idx])
 
     expected_position = raw_particle_data[1]["position"]
     for idx in range(expected_count):
-        pos = instance.get_position(idx+1)
+        pos = instance.get_position(starting_particle_index + idx)
         pos_e = expected_position[idx]
         for x, x_e in zip(pos, pos_e):
             assert_equal_with_reltol(x, x_e)
 
     expected_velocity = raw_particle_data[1]["velocity"]
     for idx in range(expected_count):
-        vel = instance.get_velocity(idx+1)
+        vel = instance.get_velocity(starting_particle_index + idx)
         vel_e = expected_velocity[idx]
         for x, x_e in zip(vel, vel_e):
             assert_equal_with_reltol(x, x_e)
@@ -181,14 +181,14 @@ def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixt
     [particle_inputs_kg],
     indirect=True
 )
-def test_change_existing_particles_generic_version(nbody_instance_kg, particle_fixture): # formerly test8
+def test_change_existing_particles_generic_version(nbody_instance_kg, particle_fixture, starting_particle_index): # formerly test8
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
 
     instance.particles.mass = [17.0, 33.0] | units.kg
-    assert_equal(instance.get_mass(1), 17.0 | units.kg)
+    assert_equal(instance.get_mass(starting_particle_index), 17.0 | units.kg)
 
 
 
@@ -293,19 +293,21 @@ def test_gravity_at_positions_generic_version(nbody_instance_with_particles, pos
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
     )
-def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data): # formerly test11
+def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index): # formerly test11
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
 
     copyof = instance.particles.copy()
-    id_to_check = 1
+    # Always check the second particle (index 1 in 0-based, 2 in 1-based)
+    id_to_check = 1  # This is index in particles collection (0-based)
+    particle_id = starting_particle_index + id_to_check  # This is the code's particle id
     expected_mass = raw_particle_data[1]["mass"][id_to_check]
     assert_equal_with_reltol(copyof[id_to_check].mass, expected_mass, 6)
 
-    copyof[1].mass = 35 | units.kg
+    copyof[id_to_check].mass = 35 | units.kg
     channel = copyof.new_channel_to(instance.particles)
     channel.copy_attributes(["mass"])
-    assert_equal_with_reltol(instance.particles[1].mass, 35 | units.kg, 6)
+    assert_equal_with_reltol(instance.particles[id_to_check].mass, 35 | units.kg, 6)
 
 
 @pytest.mark.parametrize(
@@ -313,7 +315,7 @@ def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_da
     [particle_inputs_kg],
     indirect=True
 )
-def test_set_state_generic_version(nbody_instance_kg, particle_fixture): # formerly test12
+def test_set_state_generic_version(nbody_instance_kg, particle_fixture, starting_particle_index): # formerly test12
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -326,10 +328,10 @@ def test_set_state_generic_version(nbody_instance_kg, particle_fixture): # forme
              1.0 | units.ms,
              1.0 | units.ms,
              1.0 | units.ms]
-    instance.set_state(1, *state_values)
+    instance.set_state(starting_particle_index, *state_values)
     expected_values = state_values + [0 | units.m]
 
-    curr_state = instance.get_state(1)
+    curr_state = instance.get_state(starting_particle_index)
     for expected, actual in zip(expected_values, curr_state):
         assert_equal_with_reltol(actual, expected)
 
