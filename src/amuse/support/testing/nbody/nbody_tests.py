@@ -285,14 +285,14 @@ def test_gravity_at_positions(nbody_instance_with_particles, position):
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
     )
-def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index):
+def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data):
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
 
     copyof = instance.particles.copy()
-    # Always check the second particle (index 1 in 0-based, 2 in 1-based)
-    id_to_check = 1  # This is index in particles collection (0-based)
-    particle_id = starting_particle_index + id_to_check  # This is the code's particle id
+    # Note that indexing with instance.particles[idx].mass is all 0-based
+    # whereas instance.get_mass(idx) can be 0 or 1-based (see other tests)
+    id_to_check = 1
     expected_mass = raw_particle_data[1]["mass"][id_to_check]
     assert_equal_with_reltol(copyof[id_to_check].mass, expected_mass, 6)
 
