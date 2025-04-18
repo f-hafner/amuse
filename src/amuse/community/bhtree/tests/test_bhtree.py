@@ -20,7 +20,7 @@ from equality_with_units import assert_equal
 from equality_with_units import assert_equal_with_abstol
 from equality_with_units import assert_equal_with_reltol
 
-
+## Test whether standard nbody-code interfaces are implemented correctly
 from amuse.support.testing.nbody.nbody_tests import *
 
 particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,

@@ -21,7 +21,7 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
-## Import generic nbody tests
+## Test whether standard nbody-code interfaces are implemented correctly
 from amuse.support.testing.nbody.nbody_tests import *
 
 

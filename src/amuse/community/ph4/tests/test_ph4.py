@@ -20,7 +20,7 @@ from codes_tests.gd_tests import (
     _TestGravitationalDynamicsInterface,
 )
 
-## New
+## Test whether standard nbody-code interfaces are implemented correctly
 from amuse.support.testing.nbody.nbody_tests import *
 
 ## Old
