@@ -69,7 +69,7 @@ particle_inputs_collision_detection = (
         7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
             "y": 0 | nbody_system.length,
             "z": 0 | nbody_system.length,
-            "mass": 0.001 | nbody_system.mass, # TODO: differs ph4 vs bhtree
+            "mass": 0.001 | nbody_system.mass,
             "radius": 0.01 | nbody_system.length,
             "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
           })
@@ -104,7 +104,7 @@ particle_inputs_direction_and_speed_when_evolving_model = (
         [("nbody_instance", particle_inputs_new_particle),
          ("nbody_instance_kg", particle_inputs_new_particle_kg)]
         )
-def test_new_particle_generic_version(nbody_input, particle_inputs, request): # combines test4 and test5
+def test_new_particle(nbody_input, particle_inputs, request):
     nbody_instance = request.getfixturevalue(nbody_input)
     index = nbody_instance.new_particle(*particle_inputs)
     nbody_instance.commit_particles()
@@ -112,7 +112,7 @@ def test_new_particle_generic_version(nbody_input, particle_inputs, request): # 
     assert_equal(nbody_instance.get_radius(index), particle_inputs[1])
 
 
-def test_multiple_new_particles_index_generic_version(nbody_instance_kg):
+def test_multiple_new_particles_index(nbody_instance_kg):
     instance = nbody_instance_kg
     indices = instance.new_particle(
         [15.0, 30.0] | units.kg,
@@ -137,7 +137,7 @@ def test_multiple_new_particles_index_generic_version(nbody_instance_kg):
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
 )
-def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index): # formerly test7
+def test_multiple_new_particles(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index):
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
@@ -173,7 +173,7 @@ def test_multiple_new_particles_generic_version(nbody_instance_kg, particle_fixt
     [particle_inputs_kg],
     indirect=True
 )
-def test_change_existing_particles_generic_version(nbody_instance_kg, particle_fixture, starting_particle_index): # formerly test8
+def test_change_existing_particles(nbody_instance_kg, particle_fixture, starting_particle_index):
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -206,7 +206,7 @@ particle_inputs_gravity_at_positions = (
      (particle_inputs_gravity_at_positions, 0.0, 0.125)],
     indirect=["particle_fixture"]
 )
-def test_zero_gravity_generic_version(nbody_instance, particle_fixture, point, epsilon2):
+def test_zero_gravity(nbody_instance, particle_fixture, point, epsilon2):
     """Test gravity at point where it is expected to be 0, depending on parameters."""
     nbody_instance.parameters.epsilon_squared = epsilon2 | nbody_system.length**2
     nbody_instance.particles.add_particles(particle_fixture)
@@ -225,7 +225,7 @@ def test_zero_gravity_generic_version(nbody_instance, particle_fixture, point, e
     indirect=True
 )
 @pytest.mark.parametrize("x", [0.25, 0.5, 0.75])
-def test_gravity_with_same_potential_generic_version(nbody_instance, particle_fixture, x): # formerly test9
+def test_gravity_with_same_potential(nbody_instance, particle_fixture, x):
     instance = nbody_instance
     instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
     instance.particles.add_particles(particle_fixture)
@@ -257,7 +257,7 @@ def test_gravity_with_same_potential_generic_version(nbody_instance, particle_fi
     indirect=True
 )
 @pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
-def test_gravity_at_positions_generic_version(nbody_instance_with_particles, position): # formerly test10
+def test_gravity_at_positions(nbody_instance_with_particles, position):
     """Test gravity at various positions along each dimension."""
     instance = nbody_instance_with_particles
     zero = 0.0 | nbody_system.length
@@ -285,7 +285,7 @@ def test_gravity_at_positions_generic_version(nbody_instance_with_particles, pos
     [(particle_inputs_kg, particle_inputs_kg)],
     indirect=["particle_fixture"]
     )
-def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index): # formerly test11
+def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index):
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
 
@@ -307,7 +307,7 @@ def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_da
     [particle_inputs_kg],
     indirect=True
 )
-def test_set_state_generic_version(nbody_instance_kg, particle_fixture, starting_particle_index): # formerly test12
+def test_set_state(nbody_instance_kg, particle_fixture, starting_particle_index):
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -333,7 +333,7 @@ def test_set_state_generic_version(nbody_instance_kg, particle_fixture, starting
     [particle_inputs_center_of_mass_position],
     indirect=True
 )
-def test_center_of_mass_position_generic_version(nbody_instance_kg, particle_fixture): # formerly test13
+def test_center_of_mass_position(nbody_instance_kg, particle_fixture):
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -343,9 +343,7 @@ def test_center_of_mass_position_generic_version(nbody_instance_kg, particle_fix
     expected = quantities.new_quantity(0.0, units.m)
     assert_equal_with_reltol(com[0], expected)
 
-# test_effect_of_param_epsilon_squared in bhtree tests
-def test_softening_generic_version(make_nbody_instance, nbody_timestep_parameter):
-    # Setup
+def test_softening(make_nbody_instance, nbody_timestep_parameter):
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
 
     particles = datamodel.Particles(2)
@@ -391,7 +389,7 @@ def test_softening_generic_version(make_nbody_instance, nbody_timestep_parameter
     [particle_inputs_collision_detection],
     indirect=True
 )
-def test_collision_detection_generic_version(make_nbody_instance, particle_fixture): # formerly test17
+def test_collision_detection(make_nbody_instance, particle_fixture):
     instance = make_nbody_instance(redirection="none")
     instance.initialize_code()
     instance.parameters.set_defaults()
@@ -420,7 +418,7 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
 
         left = abs(collisions.particles(0).x - collisions.particles(1).x)
         right = collisions.particles(0).radius + collisions.particles(1).radius
-        assert all(left < right) # TODO: useful error message?
+        assert all(left < right)
 
         sticky_merged = datamodel.Particles(len(collisions.particles(0)))
         sticky_merged.mass = collisions.particles(0).mass + collisions.particles(1).mass
@@ -433,7 +431,9 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
         instance.particles.add_particles(sticky_merged)
 
         n_collisions += n_current_collisions
-        if n_collisions >= max_collisions: # break in first iteration for bhtree
+        # break in first iteration if all collisions are detected at once
+        # such as in bhtree
+        if n_collisions >= max_collisions:
             break
 
     instance.evolve_model(1.0 | nbody_system.time)
@@ -446,14 +446,14 @@ def test_collision_detection_generic_version(make_nbody_instance, particle_fixtu
 
     left = abs(collisions.particles(0).x - collisions.particles(1).x)
     right = collisions.particles(0).radius + collisions.particles(1).radius
-    assert all(left < right) # TODO: useful error message?
+    assert all(left < right)
 
 @pytest.mark.parametrize(
     "particle_fixture",
     [particle_inputs_stop_n_steps],
     indirect=True
 )
-def test_cleanup_generic_version(nbody_instance, particle_fixture): # formerly test20
+def test_cleanup(nbody_instance, particle_fixture):
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -481,7 +481,7 @@ def test_cleanup_generic_version(nbody_instance, particle_fixture): # formerly t
     [particle_inputs_stop_n_steps],
     indirect=True
 )
-def test_potential_energy_generic_version(nbody_instance, particle_fixture): # formerly test21
+def test_potential_energy(nbody_instance, particle_fixture):
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -494,7 +494,7 @@ def test_potential_energy_generic_version(nbody_instance, particle_fixture): # f
     [particle_inputs_stop_n_steps],
     indirect=True
 )
-def test_add_particle_with_new_radius_generic_version(nbody_instance, particle_fixture): # formerly test22
+def test_add_particle_with_new_radius(nbody_instance, particle_fixture):
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -517,14 +517,12 @@ def test_add_particle_with_new_radius_generic_version(nbody_instance, particle_f
             "cannot add new particle with different radius"
 
 
-# test23 in bhtree; relaxed to simple inequalities w.r.t. start position
-# to make more generic
 @pytest.mark.parametrize(
     "particle_fixture, raw_particle_data",
     [(particle_inputs_direction_and_speed_when_evolving_model, particle_inputs_direction_and_speed_when_evolving_model)],
     indirect=["particle_fixture"]
     )
-def test_direction_and_speed_when_evolving_model_generic_version(make_nbody_instance, particle_fixture, raw_particle_data):
+def test_direction_and_speed_when_evolving_model(make_nbody_instance, particle_fixture, raw_particle_data):
     instance = make_nbody_instance(redirection="none")
     particles = particle_fixture
     instance.particles.add_particles(particles)
@@ -548,9 +546,9 @@ def test_direction_and_speed_when_evolving_model_generic_version(make_nbody_inst
     assert instance.particles[idx_to_check].y > y_start
 
 
-def test_system_sun_earth_generic_version(make_nbody_instance):
+def test_system_sun_earth(make_nbody_instance):
     # Set up the instance
-    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km) # for test1
+    convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km)
     instance = make_nbody_instance(convert_nbody)
     instance.parameters.epsilon_squared = 0.001 | units.AU**2
     instance.commit_parameters()
@@ -578,8 +576,6 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
     instance.particles.copy_values_of_all_attributes_to(stars)
 
     position_after_full_rotation = earth.position.value_in(units.AU)[0]
-    #assert_equal_with_abstol(position_at_start, position_after_full_rotation, 3)
-    # Replaced with
     assert_equal_with_abstol(position_at_start, position_after_full_rotation, 2)
 
     instance.evolve_model(365.0 + (365.0 / 2) | units.day)
@@ -588,8 +584,6 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
 
 
     position_delta = position_at_start + position_after_half_a_rotation
-    #assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 2)
-    # Replace with:
     assert_equal_with_abstol(position_delta, 0.00, 2)
 
     instance.evolve_model(365.0 + (365.0 / 2) + (365.0 / 4) | units.day)
@@ -599,8 +593,7 @@ def test_system_sun_earth_generic_version(make_nbody_instance):
     assert_equal_with_abstol(-position_at_start, position_after_half_a_rotation, 1)
 
 
-# taken from bhtree tests, test_total_energy
-def test_energy_unchanged_generic_version(make_nbody_instance, nbody_timestep_parameter):
+def test_energy_unchanged(make_nbody_instance, nbody_timestep_parameter):
     # Setup
     np.random.seed(0)
     number_of_stars = 2
@@ -625,9 +618,8 @@ def test_energy_unchanged_generic_version(make_nbody_instance, nbody_timestep_pa
 
     assert_equal_with_reltol(energy_total_t0, energy_total_t1, 3)
 
-# TODO: rename the function
 @pytest.mark.parametrize("n_workers", [1, 4])
-def test_energy_changed_generic_version(make_nbody_instance, n_workers, nbody_timestep_parameter): #tests10a/b from ph4
+def test_energy_changed(make_nbody_instance, n_workers, nbody_timestep_parameter):
     # Setup
     instance = make_nbody_instance(number_of_workers=n_workers)
     instance.initialize_code()
@@ -655,7 +647,7 @@ def test_energy_changed_generic_version(make_nbody_instance, n_workers, nbody_ti
     assert e1 != e0
 
 
-def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter): # formerly test16 in ph4
+def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter):
     stars = plummer.new_plummer_model(100)
     black_hole = datamodel.Particle()
     black_hole.mass = 1.0 | nbody_system.mass
@@ -685,12 +677,6 @@ def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter): 
     instance.synchronize_model()
     assert instance.get_name_of_current_state() == "RUN"
 
-    # this is not possible to test with our fixtures
-    #instance.cleanup_code()
-    #assert instance.get_name_of_current_state() == "END"
-    #self.assertEqual(instance.get_name_of_current_state(), 'END')
-    #instance.stop()
-
     instance = make_nbody_instance()
     assert instance.get_name_of_current_state() == "UNINITIALIZED"
     instance.parameters.epsilon_squared = 0.0 | nbody_system.length**2
@@ -711,11 +697,7 @@ def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter): 
     _ = instance.particles[0].mass
     assert instance.get_name_of_current_state() == "RUN"
 
-    # Not possible with our fixtures
-    #instance.stop()
-    #self.assertEqual(instance.get_name_of_current_state(), 'STOPPED')
-
-def test_potential_with_multiple_workers(make_nbody_instance): # test21 in ph4
+def test_potential_with_multiple_workers(make_nbody_instance):
     particles = plummer.new_plummer_model(200)
     particles.scale_to_standard()
     instance = make_nbody_instance()
@@ -735,7 +717,7 @@ def test_potential_with_multiple_workers(make_nbody_instance): # test21 in ph4
 
         assert_equal_with_reltol(potential0, potential, 8)
 
-def test_particles_overlay(nbody_instance): # test23 in ph4
+def test_particles_overlay(nbody_instance):
 
     particles = datamodel.Particles(
         mass=[1, 2] | nbody_system.mass,
