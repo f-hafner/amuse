@@ -1,6 +1,5 @@
 from amusetest import TestWithMPI
 import os
-import sys
 import numpy
 import math
 
