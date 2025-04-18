@@ -48,36 +48,33 @@ def make_nbody_instance(nbody_implementation):
 
 @fixture()
 def nbody_instance(make_nbody_instance):
+    """A single nbody instance fixture."""
     yield make_nbody_instance()
 
 
 @fixture()
-def nbody_instance_kg(make_nbody_instance): # for test4, test6, test7, test11, test12, test13
+def nbody_instance_kg(make_nbody_instance):
+    """A single nbody instance fixture for a kg-based nbody system."""
     convert_nbody = nbody_system.nbody_to_si(5.0 | units.kg, 10.0 | units.m)
     instance = make_nbody_instance(convert_nbody)
-    # TODO: had to remove the below: fails on ph4
-    #instance.commit_parameters()
     yield instance
-
-
-@fixture()
-def nbody_instance_with_particles(nbody_instance, particle_fixture):
-    """Create and initialize an nbody instance once for each particle fixture."""
-    nbody_instance.particles.add_particles(particle_fixture)
-    nbody_instance.commit_particles()
-    return nbody_instance
-
-
 
 @fixture
 def particle_fixture(request):
-    """Create particles from input arguments."""
+    """Create particles from input arguments.
+
+    This fixture returns a set of `datamodel.Particles`with dynamic inputs.
+    To use this particle fixture, first parametrize the test
+    function with 2 arguments--this fixture and the particle inputs; declare
+    the fixture as indirect. Then, pass the fixture as argument to the
+    test function. See `nbody_tests.py` for examples.
+
+    The particle inputs need to be a tuple. The first entry is an integer,
+    denoting the number of particles. The second entry is a dictionary of particle
+    attribute and value pairs.
+    """
     num_particles, kwargs = request.param
     particles = datamodel.Particles(num_particles)
     for key, value in kwargs.items():
         setattr(particles, key, value)
     return particles
-
-
-
-

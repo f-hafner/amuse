@@ -30,8 +30,7 @@ def _set_timestep_parameters(instance, timestep_param: tuple):
         raise AttributeError(msg) from err
     return instance
 
-
-particle_inputs_new_particle = [
+attribute_list_new_particle = [
     15.0 | nbody_system.mass,
     10.0 | nbody_system.length,
     20.0 | nbody_system.length,
@@ -42,7 +41,8 @@ particle_inputs_new_particle = [
     10.0 | nbody_system.length
     ]
 
-particle_inputs_new_particle_kg = [
+attribute_list_new_particle_kg = [
+#particle_inputs_new_particle_kg = [
     15.0 | units.kg,
     10.0 | units.m,
     20.0 | units.m,
@@ -100,16 +100,16 @@ particle_inputs_direction_and_speed_when_evolving_model = (
     # https://miguendes.me/how-to-use-fixtures-as-arguments-in-pytestmarkparametrize
     # https://github.com/pytest-dev/pytest/issues/349
 @pytest.mark.parametrize(
-        ("nbody_input", "particle_inputs"),
-        [("nbody_instance", particle_inputs_new_particle),
-         ("nbody_instance_kg", particle_inputs_new_particle_kg)]
+        ("nbody_input", "attribute_list_particle"),
+        [("nbody_instance", attribute_list_new_particle),
+         ("nbody_instance_kg", attribute_list_new_particle_kg)]
         )
-def test_new_particle(nbody_input, particle_inputs, request):
+def test_new_particle(nbody_input, attribute_list_particle, request):
     nbody_instance = request.getfixturevalue(nbody_input)
-    index = nbody_instance.new_particle(*particle_inputs)
+    index = nbody_instance.new_particle(*attribute_list_particle)
     nbody_instance.commit_particles()
-    assert_equal(nbody_instance.get_mass(index), particle_inputs[0])
-    assert_equal(nbody_instance.get_radius(index), particle_inputs[1])
+    assert_equal(nbody_instance.get_mass(index), attribute_list_particle[0])
+    assert_equal(nbody_instance.get_radius(index), attribute_list_particle[1])
 
 
 def test_multiple_new_particles_index(nbody_instance_kg):
@@ -257,9 +257,16 @@ def test_gravity_with_same_potential(nbody_instance, particle_fixture, x):
     indirect=True
 )
 @pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
-def test_gravity_at_positions(nbody_instance_with_particles, position):
-    """Test gravity at various positions along each dimension."""
-    instance = nbody_instance_with_particles
+def test_gravity_at_positions(nbody_instance, particle_fixture, position):
+    """Test gravity at various positions along each dimension.
+
+    nbody_instance_with_particles fixture takes as input a `particle_fixture`,
+    so we need to pass it through the parametrization.
+    """
+    instance = nbody_instance
+    instance.particles.add_particles(particle_fixture)
+    instance.commit_particles()
+
     zero = 0.0 | nbody_system.length
     p0 = position | nbody_system.length
     p1 = -position | nbody_system.length
