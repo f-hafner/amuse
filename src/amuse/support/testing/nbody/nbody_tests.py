@@ -10,9 +10,9 @@ from amuse.units import quantities
 
 from amuse import datamodel
 from amuse.ic import plummer
-from equality_with_units import assert_equal
-from equality_with_units import assert_equal_with_abstol
-from equality_with_units import assert_equal_with_reltol
+from amuse.support.testing.equality_with_units import assert_equal
+from amuse.support.testing.equality_with_units import assert_equal_with_abstol
+from amuse.support.testing.equality_with_units import assert_equal_with_reltol
 
 from .fixtures import *
 

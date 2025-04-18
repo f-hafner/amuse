@@ -7,7 +7,7 @@ from amuse.support.core import OrderedDictionary
 from amuse.units import nbody_system
 from amuse.units import units
 
-from equality_with_units import assert_equal_with_reltol
+from amuse.support.testing.equality_with_units import assert_equal_with_reltol
 
 ## Test whether standard nbody-code interfaces are implemented correctly
 from amuse.support.testing.nbody.nbody_tests import *
