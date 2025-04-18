@@ -1,23 +1,15 @@
-from dataclasses import make_dataclass
-from sys import exception
 import pytest
-
-import numpy as np
-import time
 import math
-import pytest
 import logging
+import numpy as np
 
-from amuse.community.bhtree.interface import BHTree
 from amuse.support.exceptions import AmuseException, CoreException
-from amuse.support.core import OrderedDictionary
 from amuse.units import nbody_system
 from amuse.units import units
 from amuse.units import quantities
 
 from amuse import datamodel
 from amuse.ic import plummer
-from pytest import fixture
 from equality_with_units import assert_equal
 from equality_with_units import assert_equal_with_abstol
 from equality_with_units import assert_equal_with_reltol
@@ -27,7 +19,7 @@ from .fixtures import *
 logger = logging.getLogger(__name__)
 
 def _set_timestep_parameters(instance, timestep_param: tuple):
-    """Helper to set timestep params for bhtree and ph4. Values taken from existing code."""
+    """Helper to set timestep params for nbody code."""
     try:
         name, value = timestep_param
         setattr(instance.parameters, name, value)
