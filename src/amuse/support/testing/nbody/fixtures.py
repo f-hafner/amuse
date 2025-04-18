@@ -27,7 +27,7 @@ def make_nbody_instance(nbody_implementation):
     The function handles the teardown of the created object automatically.
 
     Args:
-        nbody_implementation: Callable class that implements and nbody code.
+        nbody_implementation: Callable class that implements an nbody code.
 
     Returns:
         The created instance.
