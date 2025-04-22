@@ -15,6 +15,7 @@ from amuse.support.testing.equality_with_units import assert_equal_with_abstol
 from amuse.support.testing.equality_with_units import assert_equal_with_reltol
 
 from .fixtures import *
+from . import initial_conditions as ic
 
 logger = logging.getLogger(__name__)
 
@@ -30,70 +31,7 @@ def _set_timestep_parameters(instance, timestep_param: tuple):
         raise AttributeError(msg) from err
     return instance
 
-attribute_list_new_particle = [
-    15.0 | nbody_system.mass,
-    10.0 | nbody_system.length,
-    20.0 | nbody_system.length,
-    30.0 | nbody_system.length,
-    1.0 | nbody_system.speed,
-    1.0 | nbody_system.speed,
-    3.0 | nbody_system.speed,
-    10.0 | nbody_system.length
-    ]
 
-attribute_list_new_particle_kg = [
-#particle_inputs_new_particle_kg = [
-    15.0 | units.kg,
-    10.0 | units.m,
-    20.0 | units.m,
-    30.0 | units.m,
-    0.0 | units.m/units.s,
-    0.0 | units.m/units.s,
-    0.0 | units.m/units.s,
-    10.0 | units.m
-    ]
-
-particle_inputs_kg = (2, {"mass": [15.0, 30.0] | units.kg,
-          "radius": [10.0, 20.0] | units.m,
-          "position": [[10.0, 20.0, 30.0], [20.0, 40.0, 60.0]] | units.m,
-          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-          })
-
-particle_inputs_center_of_mass_position = (2, {"mass": [30.0, 30.0] | units.kg,
-          "radius": [1.0, 1.0] | units.m,
-          "position": [[-10.0, 0.0, 0.0], [10.0, 0.0, 0.0]] | units.m,
-          "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | units.m / units.s
-          })
-
-particle_inputs_collision_detection = (
-        7, {"x": [-101.0, -100.0, -0.5, 0.5, 100.0, 101.0, 104.0] | nbody_system.length,
-            "y": 0 | nbody_system.length,
-            "z": 0 | nbody_system.length,
-            "mass": 0.001 | nbody_system.mass,
-            "radius": 0.01 | nbody_system.length,
-            "velocity": [[2, 0, 0], [-2, 0, 0]]*3 + [[-4, 0, 0]] | nbody_system.speed
-          })
-
-particle_inputs_stop_n_steps = (
-        2, {"x": [0.0, 10.0] | nbody_system.length,
-            "y": 0 | nbody_system.length,
-            "z": 0 | nbody_system.length,
-            "radius": 0.005 | nbody_system.length,
-            "vx": 0 | nbody_system.speed,
-            "vy": 0 | nbody_system.speed,
-            "vz": 0 | nbody_system.speed,
-            "mass": 1.0 | nbody_system.mass,
-          })
-
-particle_inputs_direction_and_speed_when_evolving_model = (
-        2, {"x": [0.0, 10.0] | nbody_system.length,
-            "y": 0.0 | nbody_system.length,
-            "z": 0.0 | nbody_system.length,
-            "vx": 1.0 | nbody_system.speed,
-            "vy": 0.0 | nbody_system.speed,
-            "vz": 0.0 | nbody_system.speed,
-            "mass": 0.1 | nbody_system.mass,
-          })
 
 # Note how nbody_instance and nbody_instance_kg fixtures are passed as strings
     # and evaluated with request.getfixturevalue. See also:
@@ -101,8 +39,8 @@ particle_inputs_direction_and_speed_when_evolving_model = (
     # https://github.com/pytest-dev/pytest/issues/349
 @pytest.mark.parametrize(
         ("nbody_input", "attribute_list_particle"),
-        [("nbody_instance", attribute_list_new_particle),
-         ("nbody_instance_kg", attribute_list_new_particle_kg)]
+        [("nbody_instance", ic.list_new_particle),
+         ("nbody_instance_kg", ic.list_new_particle_kg)]
         )
 def test_new_particle(nbody_input, attribute_list_particle, request):
     nbody_instance = request.getfixturevalue(nbody_input)
@@ -134,7 +72,7 @@ def test_multiple_new_particles_index(nbody_instance_kg):
 
 @pytest.mark.parametrize(
     "particle_fixture, raw_particle_data",
-    [(particle_inputs_kg, particle_inputs_kg)],
+    [(ic.kg_particle, ic.kg_particle)],
     indirect=["particle_fixture"]
 )
 def test_multiple_new_particles(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index):
@@ -170,7 +108,7 @@ def test_multiple_new_particles(nbody_instance_kg, particle_fixture, raw_particl
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_kg],
+    [ic.kg_particle],
     indirect=True
 )
 def test_change_existing_particles(nbody_instance_kg, particle_fixture, starting_particle_index):
@@ -183,27 +121,12 @@ def test_change_existing_particles(nbody_instance_kg, particle_fixture, starting
     assert_equal(instance.get_mass(starting_particle_index), 17.0 | units.kg)
 
 
-
-particle_inputs_gravity_with_same_potential = (
-        2, {"mass": [1.0, 1.0] | nbody_system.mass,
-            "radius": [0.0001, 0.0001] | nbody_system.length,
-            "position": [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]] | nbody_system.length,
-            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
-          })
-
-particle_inputs_gravity_at_positions = (
-        6, {"mass": 1.0 | nbody_system.mass,
-            "radius": 0.0001 | nbody_system.length,
-            "position": [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 0.0, 1.0]] | nbody_system.length,
-            "velocity": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] | nbody_system.speed
-          })
-
 # NOTE: 0.125 is the default value for epsilon_squared;
 # it is put here to make things explicit.
 @pytest.mark.parametrize(
     ("particle_fixture", "point", "epsilon2"),
-    [(particle_inputs_gravity_with_same_potential, 1.0, 0.00001),
-     (particle_inputs_gravity_at_positions, 0.0, 0.125)],
+    [(ic.gravity_with_same_potential, 1.0, 0.00001),
+     (ic.gravity_at_positions, 0.0, 0.125)],
     indirect=["particle_fixture"]
 )
 def test_zero_gravity(nbody_instance, particle_fixture, point, epsilon2):
@@ -221,7 +144,7 @@ def test_zero_gravity(nbody_instance, particle_fixture, point, epsilon2):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_gravity_with_same_potential],
+    [ic.gravity_with_same_potential],
     indirect=True
 )
 @pytest.mark.parametrize("x", [0.25, 0.5, 0.75])
@@ -253,7 +176,7 @@ def test_gravity_with_same_potential(nbody_instance, particle_fixture, x):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_gravity_at_positions],
+    [ic.gravity_at_positions],
     indirect=True
 )
 @pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
@@ -289,7 +212,7 @@ def test_gravity_at_positions(nbody_instance, particle_fixture, position):
 
 @pytest.mark.parametrize(
     "particle_fixture, raw_particle_data",
-    [(particle_inputs_kg, particle_inputs_kg)],
+    [(ic.kg_particle, ic.kg_particle)],
     indirect=["particle_fixture"]
     )
 def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data):
@@ -311,7 +234,7 @@ def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_da
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_kg],
+    [ic.kg_particle],
     indirect=True
 )
 def test_set_state(nbody_instance_kg, particle_fixture, starting_particle_index):
@@ -337,7 +260,7 @@ def test_set_state(nbody_instance_kg, particle_fixture, starting_particle_index)
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_center_of_mass_position],
+    [ic.center_of_mass_position],
     indirect=True
 )
 def test_center_of_mass_position(nbody_instance_kg, particle_fixture):
@@ -393,7 +316,7 @@ def test_softening(make_nbody_instance, nbody_timestep_parameter):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_collision_detection],
+    [ic.collision_detection],
     indirect=True
 )
 def test_collision_detection(make_nbody_instance, particle_fixture):
@@ -457,7 +380,7 @@ def test_collision_detection(make_nbody_instance, particle_fixture):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_stop_n_steps],
+    [ic.stop_n_steps],
     indirect=True
 )
 def test_cleanup(nbody_instance, particle_fixture):
@@ -485,7 +408,7 @@ def test_cleanup(nbody_instance, particle_fixture):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_stop_n_steps],
+    [ic.stop_n_steps],
     indirect=True
 )
 def test_potential_energy(nbody_instance, particle_fixture):
@@ -498,7 +421,7 @@ def test_potential_energy(nbody_instance, particle_fixture):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_stop_n_steps],
+    [ic.stop_n_steps],
     indirect=True
 )
 def test_add_particle_with_new_radius(nbody_instance, particle_fixture):
@@ -526,7 +449,7 @@ def test_add_particle_with_new_radius(nbody_instance, particle_fixture):
 
 @pytest.mark.parametrize(
     "particle_fixture, raw_particle_data",
-    [(particle_inputs_direction_and_speed_when_evolving_model, particle_inputs_direction_and_speed_when_evolving_model)],
+    [(ic.direction_and_speed_when_evolving_model, ic.direction_and_speed_when_evolving_model)],
     indirect=["particle_fixture"]
     )
 def test_direction_and_speed_when_evolving_model(make_nbody_instance, particle_fixture, raw_particle_data):

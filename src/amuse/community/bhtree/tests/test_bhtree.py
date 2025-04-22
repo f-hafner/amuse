@@ -12,7 +12,14 @@ from amuse.support.testing.equality_with_units import assert_equal_with_reltol
 ## Test whether standard nbody-code interfaces are implemented correctly
 from amuse.support.testing.nbody.nbody_tests import *
 
+
 ### Bhtree-specific tests
+
+from amuse.support.testing.nbody.fixtures import make_nbody_instance
+from amuse.support.testing.nbody.fixtures import nbody_instance
+from amuse.support.testing.nbody.fixtures import particle_fixture
+from amuse.support.testing.nbody.initial_conditions import stop_n_steps as ic_stop_n_steps
+
 def test_bhtree_parameters(make_nbody_instance):
     # Setup
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.yr, 1.0 | units.AU)
@@ -83,7 +90,7 @@ def test_bhtree_parameters(make_nbody_instance):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_stop_n_steps],
+    [ic_stop_n_steps],
     indirect=True
 )
 def test_stop_n_steps(nbody_instance, particle_fixture):
@@ -100,7 +107,7 @@ def test_stop_n_steps(nbody_instance, particle_fixture):
 
 @pytest.mark.parametrize(
     "particle_fixture",
-    [particle_inputs_stop_n_steps],
+    [ic_stop_n_steps],
     indirect=True
 )
 def test_stop_timeout(nbody_instance, particle_fixture):

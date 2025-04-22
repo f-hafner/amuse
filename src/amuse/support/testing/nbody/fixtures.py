@@ -11,7 +11,6 @@ defined in the specific code) is used.
 from pytest import fixture
 from amuse.units import nbody_system
 from amuse.units import units
-from amuse.units import quantities
 
 from amuse import datamodel
 
