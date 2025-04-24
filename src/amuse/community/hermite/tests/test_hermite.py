@@ -1,6 +1,5 @@
 from amusetest import TestWithMPI
 import os
-import sys
 import numpy
 import math
 
@@ -20,6 +19,9 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+
+## Test whether standard nbody-code interfaces are implemented correctly
+from amuse.support.testing.nbody.nbody_tests import *
 
 
 class TestHermiteInterface(_TestGravitationalDynamicsInterface, TestWithMPI):
