@@ -43,6 +43,10 @@ class Parameters(object):
 
         return self.get_parameter(name).get_value()
 
+
+    def __hasattr__(self, name):
+        return name in self._mapping_from_name_to_definition
+
     def __setattr__(self, name, value):
         if not name in self._mapping_from_name_to_definition:
             # ~ print "Did you mean to set one of these parameters?\n", \

@@ -1,3 +1,11 @@
+"""Code in this file is deprecated.
+
+It is kept here for backwards-compatibility.
+New code should use testing infrastructure from `src/amuse/support/testing/*`,
+and in particular `src/amuse/support/testing/equality_with_units.py` for
+testing equality with units.
+For details, see https://github.com/amusecode/amuse/issues/1129.
+"""
 import unittest
 
 import numpy
@@ -114,7 +122,7 @@ class TestCase(unittest.TestCase):
     def failUnlessAlmostRelativeEqual(self, first, second, places=None, msg=None):
         self._check_comparable(first, second)
         first_num, second_num = self._convert_to_numeric(first, second, None)
-        
+
         if places is None:
             places = self.PRECISION
 

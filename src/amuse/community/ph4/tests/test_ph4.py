@@ -1,12 +1,11 @@
 import os
-import sys
 import time
-from amuse.community.ph4.interface import ph4Interface, ph4
-
-from amusetest import TestWithMPI
-
 import numpy
 import math
+
+from amuse.community.ph4.interface import ph4Interface, ph4
+from amusetest import TestWithMPI
+
 from amuse.units import nbody_system
 from amuse.units import units, constants
 from amuse import datamodel
@@ -20,7 +19,10 @@ from codes_tests.gd_tests import (
     _TestGravitationalDynamicsInterface,
 )
 
+## Test whether standard nbody-code interfaces are implemented correctly
+from amuse.support.testing.nbody.nbody_tests import *
 
+## Old tests
 class TestPh4Interface(_TestGravitationalDynamicsInterface, TestWithMPI):
     def gravity_code_interface(self):
         return ph4Interface
