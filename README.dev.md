@@ -45,10 +45,23 @@ will override any fixtures defined in *any* `conftest` file.
 code package in a `conftest.py` file. The standard `pytest` discovery
 mechanism applies to them.
 
+### Reusing fixtures and functions from API tests in code-specific tests
 
+If you want to use fixtures from `amuse.support.testing.` for code-specific tests,
+you should import them explicitly. For instance:
+```python
 
+from amuse.support.testing.nbody.nbody_tests import *
 
+# code-specific tests
+from amuse.support.testing.nbody.fixtures import my_fixture
 
+def test_something(my_fixture):
+    some_code(my_fixture)
+
+```
+
+This will make sure code-specific tests can run independently of the API tests.
 
 
 
