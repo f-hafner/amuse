@@ -20,7 +20,18 @@ from . import initial_conditions as ic
 logger = logging.getLogger(__name__)
 
 def _set_timestep_parameters(instance, timestep_param: tuple):
-    """Helper to set timestep params for nbody code."""
+    """Helper to set timestep params for nbody code.
+
+    Args:
+        instance: N-body code instance
+        timestep_param: Tuple containing (parameter_name, parameter_value)
+
+    Returns:
+        The instance with updated timestep parameters
+
+    Raises:
+        AttributeError: If parameter can't be set
+    """
     try:
         name, value = timestep_param
         setattr(instance.parameters, name, value)
@@ -43,6 +54,7 @@ def _set_timestep_parameters(instance, timestep_param: tuple):
          ("nbody_instance_kg", ic.list_new_particle_kg)]
         )
 def test_new_particle(nbody_input, attribute_list_particle, request):
+    """Test adding a new particle to N-body code and verifying mass and radius."""
     nbody_instance = request.getfixturevalue(nbody_input)
     index = nbody_instance.new_particle(*attribute_list_particle)
     nbody_instance.commit_particles()
@@ -51,6 +63,7 @@ def test_new_particle(nbody_input, attribute_list_particle, request):
 
 
 def test_multiple_new_particles_index(nbody_instance_kg):
+    """Test adding multiple particles at once and retrieval by index."""
     instance = nbody_instance_kg
     indices = instance.new_particle(
         [15.0, 30.0] | units.kg,
@@ -76,6 +89,7 @@ def test_multiple_new_particles_index(nbody_instance_kg):
     indirect=["particle_fixture"]
 )
 def test_multiple_new_particles(nbody_instance_kg, particle_fixture, raw_particle_data, starting_particle_index):
+    """Test adding multiple particles verifying all attributes match expected values."""
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
@@ -112,6 +126,7 @@ def test_multiple_new_particles(nbody_instance_kg, particle_fixture, raw_particl
     indirect=True
 )
 def test_change_existing_particles(nbody_instance_kg, particle_fixture, starting_particle_index):
+    """Test modifying attributes of existing particles."""
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -149,6 +164,7 @@ def test_zero_gravity(nbody_instance, particle_fixture, point, epsilon2):
 )
 @pytest.mark.parametrize("x", [0.25, 0.5, 0.75])
 def test_gravity_with_same_potential(nbody_instance, particle_fixture, x):
+    """Test equal potential at symmetric positions and expected gravity values."""
     instance = nbody_instance
     instance.parameters.epsilon_squared = 0.00001 | nbody_system.length**2
     instance.particles.add_particles(particle_fixture)
@@ -181,11 +197,7 @@ def test_gravity_with_same_potential(nbody_instance, particle_fixture, x):
 )
 @pytest.mark.parametrize("position", [0.25, 0.5, 0.75])
 def test_gravity_at_positions(nbody_instance, particle_fixture, position):
-    """Test gravity at various positions along each dimension.
-
-    nbody_instance_with_particles fixture takes as input a `particle_fixture`,
-    so we need to pass it through the parametrization.
-    """
+    """Test gravity at various positions along each dimension."""
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
     instance.commit_particles()
@@ -216,6 +228,7 @@ def test_gravity_at_positions(nbody_instance, particle_fixture, position):
     indirect=["particle_fixture"]
     )
 def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_data):
+    """Test particle copying and attribute copying through channels."""
     instance = nbody_instance_kg
     instance.particles.add_particles(particle_fixture)
 
@@ -238,6 +251,7 @@ def test_copy_particle_mass(nbody_instance_kg, particle_fixture, raw_particle_da
     indirect=True
 )
 def test_set_state(nbody_instance_kg, particle_fixture, starting_particle_index):
+    """Test setting and getting particle state values."""
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -264,6 +278,7 @@ def test_set_state(nbody_instance_kg, particle_fixture, starting_particle_index)
     indirect=True
 )
 def test_center_of_mass_position(nbody_instance_kg, particle_fixture):
+    """Test calculation of center of mass position."""
     instance = nbody_instance_kg
 
     instance.particles.add_particles(particle_fixture)
@@ -274,6 +289,7 @@ def test_center_of_mass_position(nbody_instance_kg, particle_fixture):
     assert_equal_with_reltol(com[0], expected)
 
 def test_softening(make_nbody_instance, nbody_timestep_parameter):
+    """Test effects of different softening parameters on gravitational dynamics."""
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 1.0 | units.AU)
 
     particles = datamodel.Particles(2)
@@ -320,6 +336,7 @@ def test_softening(make_nbody_instance, nbody_timestep_parameter):
     indirect=True
 )
 def test_collision_detection(make_nbody_instance, particle_fixture):
+    """Test collision detection and handling with sticky merges."""
     instance = make_nbody_instance(redirection="none")
     instance.initialize_code()
     instance.parameters.set_defaults()
@@ -384,6 +401,7 @@ def test_collision_detection(make_nbody_instance, particle_fixture):
     indirect=True
 )
 def test_cleanup(nbody_instance, particle_fixture):
+    """Test code cleanup and verification of particle set references."""
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -412,6 +430,7 @@ def test_cleanup(nbody_instance, particle_fixture):
     indirect=True
 )
 def test_potential_energy(nbody_instance, particle_fixture):
+    """Test calculation of potential energy."""
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -425,6 +444,7 @@ def test_potential_energy(nbody_instance, particle_fixture):
     indirect=True
 )
 def test_add_particle_with_new_radius(nbody_instance, particle_fixture):
+    """Test adding a particle with a different radius than existing particles."""
     instance = nbody_instance
     instance.particles.add_particles(particle_fixture)
 
@@ -453,6 +473,7 @@ def test_add_particle_with_new_radius(nbody_instance, particle_fixture):
     indirect=["particle_fixture"]
     )
 def test_direction_and_speed_when_evolving_model(make_nbody_instance, particle_fixture, raw_particle_data):
+    """Test particle movement direction and speed during model evolution."""
     instance = make_nbody_instance(redirection="none")
     particles = particle_fixture
     instance.particles.add_particles(particles)
@@ -477,6 +498,7 @@ def test_direction_and_speed_when_evolving_model(make_nbody_instance, particle_f
 
 
 def test_system_sun_earth(make_nbody_instance):
+    """Test Sun-Earth orbital evolution over multiple time periods."""
     # Set up the instance
     convert_nbody = nbody_system.nbody_to_si(1.0 | units.MSun, 149.5e6 | units.km)
     instance = make_nbody_instance(convert_nbody)
@@ -524,6 +546,7 @@ def test_system_sun_earth(make_nbody_instance):
 
 
 def test_energy_unchanged(make_nbody_instance, nbody_timestep_parameter):
+    """Test energy conservation during model evolution."""
     # Setup
     np.random.seed(0)
     number_of_stars = 2
@@ -550,6 +573,7 @@ def test_energy_unchanged(make_nbody_instance, nbody_timestep_parameter):
 
 @pytest.mark.parametrize("n_workers", [1, 4])
 def test_energy_changed(make_nbody_instance, n_workers, nbody_timestep_parameter):
+    """Test energy changes when particle masses are modified during evolution."""
     # Setup
     instance = make_nbody_instance(number_of_workers=n_workers)
     instance.initialize_code()
@@ -578,6 +602,7 @@ def test_energy_changed(make_nbody_instance, n_workers, nbody_timestep_parameter
 
 
 def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter):
+    """Test code state transitions during different operations."""
     stars = plummer.new_plummer_model(100)
     black_hole = datamodel.Particle()
     black_hole.mass = 1.0 | nbody_system.mass
@@ -628,6 +653,7 @@ def test_states(nbody_instance, make_nbody_instance, nbody_timestep_parameter):
     assert instance.get_name_of_current_state() == "RUN"
 
 def test_potential_with_multiple_workers(make_nbody_instance):
+    """Test consistent potential calculation with different worker counts."""
     particles = plummer.new_plummer_model(200)
     particles.scale_to_standard()
     instance = make_nbody_instance()
@@ -648,7 +674,7 @@ def test_potential_with_multiple_workers(make_nbody_instance):
         assert_equal_with_reltol(potential0, potential, 8)
 
 def test_particles_overlay(nbody_instance):
-
+    """Test ParticlesOverlay functionality with N-body code."""
     particles = datamodel.Particles(
         mass=[1, 2] | nbody_system.mass,
         x=[-1, 1] | nbody_system.length,
