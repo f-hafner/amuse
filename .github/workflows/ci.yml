@@ -27,6 +27,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-tags: true
+        fetch-depth: 0
     - name: Set up conda
       uses: conda-incubator/setup-miniconda@v3
       with:
@@ -38,6 +39,7 @@ jobs:
       run: |
         conda info
         conda env list
+        git describe --long --dirty --always --tags
     - name: Install dependencies
       run: |
         conda install -y -c conda-forge pip wheel
