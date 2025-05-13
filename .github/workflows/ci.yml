@@ -53,6 +53,7 @@ jobs:
         #conda init
         #conda activate Amuse-env
         conda info
+        conda init
         conda activate test
         conda info
         conda install -y -c conda-forge pip wheel
@@ -64,6 +65,7 @@ jobs:
 
     - name: Install amuse
       run: |
+        conda init
         conda activate test
         ./setup install amuse-framework
         ./setup install ph4
@@ -72,6 +74,7 @@ jobs:
     - name: Run tests
       run: |
         #./setup test ph4-sapporo
+        conda init
         conda activate test
         ./setup test ph4
 
