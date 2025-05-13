@@ -18,64 +18,42 @@ jobs:
     runs-on: ubuntu-latest #${{ matrix.os }}
     strategy:
       fail-fast: false
+    defaults:
+      run:
+        shell: bash -el {0} # without this, conda env not active across steps
 
     steps:
-
     - name: Checkout
       uses: actions/checkout@v4
-
     - name: Set up conda
       uses: conda-incubator/setup-miniconda@v3
       with:
        auto-update-conda: true
        channels: conda-forge
+       #activate-environment: Amuse-env
         #python-version: 3.13.3
-
     - name: Conda and env info
       run: |
-        ls -alth
         conda info
         conda env list
-        conda list
-        which python
-        python --version
-        conda --version
-
-
-    #uses: actions/checkout@v3
-    #  uses: s-weigand/setup-conda@v1
-    #  run: conda --version
-    #  run: which python
-
     - name: Install dependencies
       run: |
-        #conda create -y --name Amuse-env
-        #conda init
-        #conda activate Amuse-env
-        conda info
-        conda init
-        conda activate test
-        conda info
         conda install -y -c conda-forge pip wheel
         conda install -y -c conda-forge c-compiler cxx-compiler fortran-compiler 'gfortran<14' python pkgconfig coreutils patch curl tar unzip gzip bzip2 xz perl bison make cmake openmpi gsl fftw gmp mpfr hdf5 netcdf4 libopenblas liblapack zlib 'docutils>=0.6' 'mpi4py>=1.1.0' 'numpy>=1.2.2' 'h5py>=1.1.0'
         conda install -y pytest
         #conda install -y cuda
         ./setup
         conda list
-
     - name: Install amuse
       run: |
-        conda init
-        conda activate test
         ./setup install amuse-framework
         ./setup install ph4
         #./setup install sapporo_light ph4-sapporo
-
     - name: Run tests
       run: |
+        echo $OMPI_MCA_btl_tcp_if_include
+        export OMPI_MCA_btl_tcp_if_include=lo
         #./setup test ph4-sapporo
-        conda init
-        conda activate test
         ./setup test ph4
 
         #    - name: Install amuse
