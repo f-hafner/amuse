@@ -1,0 +1,59 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: ci
+
+on:
+  push:
+    branches:
+     - main
+     - new-gh-action
+  pull_request:
+    branches:
+     - main
+  workflow_dispatch:
+
+jobs:
+  linux-gpu:
+    name: "Run GPU tests"
+    runs-on: ghcr.io/cirruslabs/ubuntu-runner-amd64-gpu:24.04
+    strategy:
+      fail-fast: false
+    defaults:
+      run:
+        shell: bash -el {0} # without this, conda env not active across steps
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+        fetch-depth: 0
+    - name: Set up conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+       auto-update-conda: true
+       channels: conda-forge
+    - name: Conda and env info
+      run: |
+        conda info
+        conda env list
+        git describe --long --dirty --always --tags
+    - name: Install dependencies
+      run: |
+        conda install -y -c conda-forge pip wheel
+        conda install -y -c conda-forge c-compiler cxx-compiler fortran-compiler 'gfortran<14' python pkgconfig coreutils patch curl tar unzip gzip bzip2 xz perl bison make cmake openmpi gsl fftw gmp mpfr hdf5 netcdf4 libopenblas liblapack zlib 'docutils>=0.6' 'mpi4py>=1.1.0' 'numpy>=1.2.2' 'h5py>=1.1.0'
+        conda install -y pytest
+        conda install -y cuda
+        ./setup
+        conda list
+    - name: Install amuse
+      run: |
+        ./setup install amuse-framework
+        ./setup install ph4
+        ./setup install sapporo_light ph4-sapporo
+    - name: Run tests
+      run: |
+        echo $OMPI_MCA_btl_tcp_if_include
+        export OMPI_MCA_btl_tcp_if_include=lo
+        ./setup test ph4-sapporo
+        ./setup test ph4
