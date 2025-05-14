@@ -49,7 +49,7 @@ jobs:
       run: |
         nvidia-smi
         sudo apt-get update
-        sudo apt-get -y install cuda-nvcc
+        sudo apt-get -y install cuda-nvcc-12-4
         nvcc --version
     - name: Install amuse
       run: |
