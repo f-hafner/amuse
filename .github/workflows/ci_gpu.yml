@@ -37,6 +37,12 @@ jobs:
       run: |
         conda info
         conda env list
+    - name: Install and check cuda
+      run: |
+        nvidia-smi
+        sudo apt-get update
+        sudo apt-get -y install cuda-nvcc-12-4
+        /usr/local/cuda-12.4/bin/nvcc --version
     - name: Install dependencies
       run: |
         conda install -y -c conda-forge pip wheel
@@ -45,12 +51,6 @@ jobs:
         #conda install -y cuda # -- runners should already have cuda installed
         ./setup
         conda list
-    - name: Install and check cuda
-      run: |
-        nvidia-smi
-        sudo apt-get update
-        sudo apt-get -y install cuda-nvcc-12-4
-        nvcc --version
     - name: Install amuse
       run: |
         ./setup install amuse-framework
