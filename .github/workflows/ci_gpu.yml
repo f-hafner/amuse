@@ -37,7 +37,6 @@ jobs:
       run: |
         conda info
         conda env list
-        git describe --long --dirty --always --tags
     - name: Install dependencies
       run: |
         conda install -y -c conda-forge pip wheel
@@ -56,5 +55,9 @@ jobs:
         echo $OMPI_MCA_btl_tcp_if_include
         export OMPI_MCA_btl_tcp_if_include=lo
         ./setup test ph4-sapporo
-        cat src/amuse_ph4/packages/amuse-ph4-sapporo/code.out
         #./setup test ph4
+    - name: Show debug
+      if: ${{ failure() }}
+      run: |
+        cat src/amuse_ph4/packages/amuse-ph4-sapporo/code.out
+
