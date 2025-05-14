@@ -28,8 +28,6 @@ jobs:
       with:
         fetch-tags: true
         fetch-depth: 0
-        #- name: Install cuda
-        #  uses: Jimver/cuda-toolkit@v0.2.23
     - name: Set up conda
       uses: conda-incubator/setup-miniconda@v3
       with:
@@ -44,16 +42,13 @@ jobs:
         conda install -y -c conda-forge pip wheel
         conda install -y -c conda-forge c-compiler cxx-compiler fortran-compiler 'gfortran<14' python pkgconfig coreutils patch curl tar unzip gzip bzip2 xz perl bison make cmake openmpi gsl fftw gmp mpfr hdf5 netcdf4 libopenblas liblapack zlib 'docutils>=0.6' 'mpi4py>=1.1.0' 'numpy>=1.2.2' 'h5py>=1.1.0'
         conda install -y pytest
-        conda install -y cuda==12.4.0 # -- runners should already have cuda installed
+        conda install -y cuda==12.4.0
         ./setup
         conda list
     - name: Install and check cuda
       run: |
         nvidia-smi
         nvcc --version
-        #sudo apt-get update
-        #sudo apt-get -y install cuda-nvcc-12-4
-        #/usr/local/cuda-12.4/bin/nvcc --version
     - name: Install amuse
       run: |
         ./setup install amuse-framework
