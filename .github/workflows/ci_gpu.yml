@@ -42,9 +42,13 @@ jobs:
         conda install -y -c conda-forge pip wheel
         conda install -y -c conda-forge c-compiler cxx-compiler fortran-compiler 'gfortran<14' python pkgconfig coreutils patch curl tar unzip gzip bzip2 xz perl bison make cmake openmpi gsl fftw gmp mpfr hdf5 netcdf4 libopenblas liblapack zlib 'docutils>=0.6' 'mpi4py>=1.1.0' 'numpy>=1.2.2' 'h5py>=1.1.0'
         conda install -y pytest
-        conda install -y cuda
+        #conda install -y cuda # -- runners should already have cuda installed
         ./setup
         conda list
+    - name: Check cuda
+      run: |
+        nvcc --version
+        nvidia-smi
     - name: Install amuse
       run: |
         ./setup install amuse-framework
