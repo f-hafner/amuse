@@ -45,10 +45,12 @@ jobs:
         #conda install -y cuda # -- runners should already have cuda installed
         ./setup
         conda list
-    - name: Check cuda
+    - name: Install and check cuda
       run: |
-        nvcc --version
         nvidia-smi
+        sudo apt-get update
+        sudo apt-get -y install cuda-nvcc
+        nvcc --version
     - name: Install amuse
       run: |
         ./setup install amuse-framework
