@@ -7,7 +7,6 @@ on:
   push:
     branches:
      - main
-     - new-gh-action
   pull_request:
     branches:
      - main
@@ -21,7 +20,6 @@ jobs:
     defaults:
       run:
         shell: bash -el {0} # without this, conda env not active across steps
-
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -33,8 +31,6 @@ jobs:
       with:
        auto-update-conda: true
        channels: conda-forge
-       #activate-environment: Amuse-env
-        #python-version: 3.13.3
     - name: Conda and env info
       run: |
         conda info
@@ -59,52 +55,3 @@ jobs:
         export OMPI_MCA_btl_tcp_if_include=lo
         #./setup test ph4-sapporo
         ./setup test ph4
-
-        #    - name: Install amuse
-        #      run: |
-        #        pip install -e .
-        #        ./configure
-        #
-        #    - name: build AMUSE framework
-        #      run: |
-        #        make framework
-        #
-        #    - name: build SSE and BHTree
-        #      run: |
-        #        make sse.code bhtree.code
-        #
-        #    - name: check installation
-        #      run: |
-        #        amusifier --get-amuse-configmk
-        #        pip list
-        #
-        #    - name: move build log
-        #      run: |
-        #        mv build.log build-${{ matrix.mpi }}-${{ matrix.python }}.log
-        #    - name: archive build log
-        #      uses: actions/upload-artifact@v4
-        #      with:
-        #          name: buildlog-${{ matrix.mpi }}-${{ matrix.python }}
-        #          path: build-${{ matrix.mpi }}-${{ matrix.python }}.log
-        #
-        #    - name: test core_tests
-        #      run: |
-        #        pytest --pyargs amuse.test.suite.core_tests -s
-        #
-        #    - name: test compile_tests
-        #      run: |
-        #        ip link show
-        #        echo $OMPI_MCA_btl_tcp_if_include
-        #        pytest -k "not test29" --pyargs amuse.test.suite.compile_tests.test_c_implementation -sv
-        #      env:
-        #        OMPI_MCA_rmaps_base_oversubscribe: 1
-        #        OMPI_MCA_btl_tcp_if_include: lo
-        #
-        #    - name: test code_tests
-        #      run: |
-        #        mpiexec -n 1 pytest --pyargs amuse.test.suite.codes_tests.test_bhtree -sv
-        #        mpiexec -n 1 pytest --pyargs amuse.test.suite.codes_tests.test_sse -sv
-        #      env:
-        #        OMPI_MCA_rmaps_base_oversubscribe: 1
-        #        OMPI_MCA_btl_tcp_if_include: lo
-        #        OMPI_MCA_pmix_server_max_wait: 10
