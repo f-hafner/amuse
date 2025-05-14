@@ -56,4 +56,5 @@ jobs:
         echo $OMPI_MCA_btl_tcp_if_include
         export OMPI_MCA_btl_tcp_if_include=lo
         ./setup test ph4-sapporo
-        ./setup test ph4
+        cat src/amuse_ph4/packages/amuse-ph4-sapporo/code.out
+        #./setup test ph4

@@ -849,7 +849,7 @@ class TestPH4(TestWithMPI):
         particles = new_plummer_model(200)
         particles.scale_to_standard()
         try:
-            instance = ph4(mode="gpu")
+            instance = ph4(mode="gpu", redirection="file")
         except:
             self.skip("gpu mode is not available")
 
